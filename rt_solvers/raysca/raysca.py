@@ -15,7 +15,7 @@ Maybe we'll do the research by creating some kind of geometry which we'll vary
 iteratively while doing the inversion!
 
 Could there be an optimization based on the medium points we're tracing through?
-In the neearest neighbour setup our steps would be simplified considerably in 
+In the neearest neighbour setup our steps would be simplified considerably in
 some larger structures?
 """
 
@@ -23,47 +23,64 @@ some larger structures?
 11.3.2022
 Mikkonen, Antti
 Okay, now we need to make some dazzling optimizations and fast. Plan is as follows:
-    
-    The path tracing is done first and sequentially. 
+
+    The path tracing is done first and sequentially.
         The path contains the nodes on how radiance changes directions
         For each scatterer a new path is created
         path segment transmittances are computed beforehand
         path transmittances are then combined from scattering phase matrices and
         path segment transmittances
-        
-    The transmissivity of each of the paths is computed afterwards using fancy 
+
+    The transmissivity of each of the paths is computed afterwards using fancy
 parallel methods. The parallelization comes into account in the integration part.
         The transmissivity computations initially check which interpolations
         are needed along each of the paths, depending on the integration length.
         DONE! extinction is precomputed!
-        The large path systems are 
-        
-        
-"""
+        The large path systems are
 
+
+"""
+def keyboard(banner=None):
+    import sys
+    import code
+    ''' Function that mimics the matlab keyboard command '''
+    # use exception trick to pick up the current frame
+    # os.system("""osascript -e 'display notification "Keyboard ready" with title "Ready"'""")
+    try:
+        raise None
+    except Exception:
+        frame = sys.exc_info()[2].tb_frame.f_back
+    print("# Use quit() to exit :) Happy debugging!")
+    # evaluate commands in current namespace
+    namespace = frame.f_globals.copy()
+    namespace.update(frame.f_locals)
+    try:
+        code.interact(banner=banner, local=namespace)
+    except SystemExit:
+        return
 
 # TODO: This needs to be refactored into smaller modules
 # TODO: Before modifying stuff too much, compute a test case against which it
 # is easy to test if things work correctly.
 
-# TODO: Verify that surface reflectances are handled in correct order, i.e. 
-# inc_zen is in the direction of the source. This shouldn't be an issue if the 
+# TODO: Verify that surface reflectances are handled in correct order, i.e.
+# inc_zen is in the direction of the source. This shouldn't be an issue if the
 # brdf is symmetrical with respect to the zenith angles.
 
 # TODO: Wavelength-dependent muller matrices for scattering?
 
 # TODO: ARSCA-function to change RaySca settings for automating settings changes
 
-# TODO: If multiple-scattering with Monte Carlo is implemented, then the 
+# TODO: If multiple-scattering with Monte Carlo is implemented, then the
 # polaris-function from Siro is needed
 
-# TODO: Should scattering and absorbing elements be separated? 
+# TODO: Should scattering and absorbing elements be separated?
 
 # TODO: Non-far-field sources 1/r radiance diminishing information can be stored
 # in the norm of the source_direction function.
 
 # TODO: To make this more accessible and nicer, the lambda interpolators should
-# be implemented using classes! This would eliminate the need for 'pathos' 
+# be implemented using classes! This would eliminate the need for 'pathos'
 # package. This should be done in the refactoring phase
 
 # TODO: The parallelization over wavelengths should be smart, i.e. so the maximum
@@ -74,7 +91,7 @@ parallel methods. The parallelization comes into account in the integration part
 
 # TODO: Add logic to trace to multiple sources at the same time.
 
-# TODO: Optimize the computation by precomputing the cross-section and medium 
+# TODO: Optimize the computation by precomputing the cross-section and medium
 # products as they're used everywhere. This will be extremely useful when computing
 # camera-like images
 
@@ -120,7 +137,7 @@ def set_paths(raysca_path):
         settings_file = basepath + settings_file
         phase_folder = basepath + phase_folder
         paths_set = True
-    
+
 def read_settings():
     # These are the parameters loaded from the configuration files
     global main_beam_step_length, scattering_step_length
@@ -129,7 +146,7 @@ def read_settings():
     global source_los_cartesian_product, aerosol_file, brdf_file, optimized_mode
     global stokes_output_format, super_accurate, interpolator
     global gaussian_drop_off, gaussian_sum
-    
+
     with open(settings_file, 'r') as stream:
         try:
             settings = yaml.safe_load(stream)
@@ -195,7 +212,7 @@ def interpolate_wavelengths(cross_section, wavelengths_in, wavelengths_out):
 def gauss_fun(pos_in,pos_base,std_base,val_base):
     # 3-dimensional isotropic Gaussian
     # Source: https://en.wikipedia.org/wiki/Multivariate_normal_distribution
-    
+
     std_max = 4 # Further away than this, the value is zero.
     # Value of 4 corresponds to 2sigma
     var = std_base ** 2
@@ -205,7 +222,7 @@ def gauss_fun(pos_in,pos_base,std_base,val_base):
         value = np.zeros((val_base.shape[1],))
     else:
         value = np.zeros((1,))
-        
+
     for i in range(diffTdiff.shape[0]):
         if diffTdiff[i] > std_max * var[i]:
             continue
@@ -224,8 +241,8 @@ def gauss_fun(pos_in,pos_base,std_base,val_base):
                 value = np.sum(val_base / div * np.exp(exp))
             break
     return value
-            
-    
+
+
 def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
     """
     Sets up the interpolation functions for the medium positions.
@@ -267,7 +284,7 @@ def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
             # You'd might think that the lambda functions here would be unnecessarily complex, and you'd be right!
             # It appears that if you construct lambda functions in a loop with different variables, then all of them would use the last one
             # Who knows what's going on with this!
-            
+
             for i_abs in range(n_abs):
                 interp_funs['absorber'].append(lambda pos, medium_vals=medium['absorber'][mask,i_abs] : interp1d(R, medium_vals, kind=interpolator,assume_sorted=True)(base_interp_fun(pos)))
                 xsec_abs = interpolate_wavelengths(medium['absorbing_cross_section'][mask,:,i_abs], wavelengths_in, wavelengths_out)
@@ -284,7 +301,7 @@ def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
                 R_poss = medium['position'][mask]
                 tau_abs = np.zeros((R_poss.shape[0],wavelengths_in.size))
                 tau_sca = np.zeros((R_poss.shape[0],wavelengths_in.size))
-                
+
                 for R_idx in range(R_poss.shape[0]):
                     R_pos = R_poss[R_idx]
                     for idx_abs in range(-n_abs,0):
@@ -302,11 +319,11 @@ def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
             #    There's no dependence between different medium positions. The basis
             #    function is a 3-dimensional Gaussian hump. The interpolation parameter
             #    is the standard deviation of the Gaussian.
-            
+
             # Inversiossa sitten pitääpi tehä vaan siroamattomalla
             medium_std = medium['interpolation_parameter'][mask]
             medium_pos = medium['position'][mask]
-            
+
             for i_abs in range(n_abs):
                 interp_funs['absorber'].append(lambda pos, medium_vals=medium['absorber'][mask,i_abs] : gauss_fun(pos,medium_pos,medium_std,medium_vals))
                 xsec_abs = interpolate_wavelengths(medium['absorbing_cross_section'][mask,:,i_abs], wavelengths_in, wavelengths_out)
@@ -323,7 +340,7 @@ def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
                 R_poss = medium['position'][mask]
                 tau_abs = np.zeros((R_poss.shape[0],wavelengths_in.size))
                 tau_sca = np.zeros((R_poss.shape[0],wavelengths_in.size))
-                
+
                 for R_idx in range(R_poss.shape[0]):
                     R_pos = R_poss[R_idx]
                     for idx_abs in range(-n_abs,0):
@@ -336,7 +353,7 @@ def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
                         * interp_funs['scattering_cross_section'][idx_sca](R_pos) )
                 tau_ext = cm_in_km * (tau_abs + tau_sca)
                 interp_funs['extinction'].append(lambda pos, medium_vals=tau_ext : gauss_fun(pos,medium_pos,medium_std,medium_vals))
-            
+
         elif current_fun_selection == 3:
             pass
             #nearest neighbour blocks
@@ -352,6 +369,10 @@ def muller_rayleigh(theta, depolarization):
     Chandrasekhar p. 49
     Originally in Siro by Liisa Oikarinen on 8.12.1998
     """
+    if type(depolarization) == type(np.array([1])):
+        # NOTE: This is a safeguard due to some curious circumstances and
+        # it shouldn't slow the code too much down.
+        depolarization = depolarization[0]
     gamma = depolarization / (2.0 - depolarization)
     coeff = 3.0 / (8.0 * np.pi) * (1.0 / (1.0 + 2.0 * depolarization))
     M11 = (np.cos(theta) ** 2 * (1.0 - gamma) + gamma)
@@ -547,9 +568,9 @@ def sample_scattering_position(path_dict):
 
 
 def get_path(geom, interp_funs, refl_funs, photon_position, photon_direction, photon_in_domain, fast_trace):
-    #Generates a path array which stores the photon positions, directions, 
+    #Generates a path array which stores the photon positions, directions,
     #transmissivities (weights) and scattering probabilities
-    path_dict = {'position' : [], 
+    path_dict = {'position' : [],
                  'direction' : [],
                  'transmissivty' : [],
                  'cumulate' : not fast_trace, # if this is the main beam, then we'll cumulate the transmissivty beforehand
@@ -557,14 +578,14 @@ def get_path(geom, interp_funs, refl_funs, photon_position, photon_direction, ph
                  'cumulative_scattering_probability' : [],
                  'reflect_at_end' : False,
                  'boundary_at_end' : 0}
-    # if reflect_at_end is False, then the final element of the lists is 
+    # if reflect_at_end is False, then the final element of the lists is
     # an intramedium scattering event (presumably right before a beam exits
     # the medium). boundary_at_end stores the boundary index
     transmissivity = np.ones_like(geom['incident_stokes'])
     idx_wl = geom['wavelength_index']
     tau_size = idx_wl.size
     n_sca = len(interp_funs['scatterer'])
-    
+
     while True:
         (step_transmissivity, next_position, photon_direction) = trace_photon(
                     geom, interp_funs, refl_funs,
@@ -580,7 +601,7 @@ def get_path(geom, interp_funs, refl_funs, photon_position, photon_direction, ph
         else:
             photon_position = next_position
         path_dict['position'].append(photon_position)
-        # for example refraction may change the photon direction in 
+        # for example refraction may change the photon direction in
         # trace_photon
         path_dict['direction'].append(photon_direction)
         transmissivity = transmissivity * step_transmissivity
@@ -599,12 +620,12 @@ def get_path(geom, interp_funs, refl_funs, photon_position, photon_direction, ph
         path_dict['cumulative_scattering_probability'].append(probs)
     cum_sca_prob = np.array(path_dict['cumulative_scattering_probability'])
     cum_sca_prob_sum = np.sum(cum_sca_prob,axis=1)
-    
+
     if path_dict['reflect_at_end']:
         step_len = scattering_step_length if fast_trace else main_beam_step_length
         steps = step_len * np.ones((len(path_dict['position']),))
         medium_scatter_probability = 1 - np.exp(-np.sum(cum_sca_prob_sum * steps))
-        
+
         # Append the final step for surface reflectance
         path_dict['cumulative_scattering_probability'].append(medium_scatter_probability)
         (step_transmissivity, last_position, last_direction) = trace_photon(
@@ -616,22 +637,22 @@ def get_path(geom, interp_funs, refl_funs, photon_position, photon_direction, ph
         path_dict['position'].append(last_position)
         path_dict['direction'].append(last_direction)
     else:
-        # The boundary at the end doesn't reflect the photon, so we'll force a 
+        # The boundary at the end doesn't reflect the photon, so we'll force a
         # scattering event in the atmosphere.
         medium_scatter_probability = 1
-        
+
     for k in ['position','direction','transmissivity','scattering_efficiency','cumulative_scattering_probability']:
         path_dict[k] = np.array(path_dict[k])
-        
+
     path_dict['cumulative_scattering_probability'] = path_dict['cumulative_scattering_probability'] / medium_scatter_probability
-    
+
     if path_dict['cumulate']:
         #TODO: cumsum probability and then scale!
         #TODO: cumprod transmissivity!
         #tsekkaa että mitkä dimensiot on kyseessä
         pass
     return path_dict
-    
+
 def set_up_geometry(source_idx,los_idx,wl_idx,instrument,source,boundary):
     """
     Sets up all the needed geometry of the ray-tracer. The instrument locations
@@ -654,16 +675,16 @@ def set_up_geometry(source_idx,los_idx,wl_idx,instrument,source,boundary):
             # spherical surface
             # The function will return a number larger than zero if the point is
             # on the outside and a negative number when we're inside the sphere.
-            # The surface normal should point always INSIDE the medium. 
+            # The surface normal should point always INSIDE the medium.
             shape_param = shape_params[shape_idx]
             boundary_funs.append(lambda r, shape_param=shape_param : np.dot(r,r) - shape_param ** 2)
-            
+
             if shape_param == np.max(shape_params):
                 # This is the case for the outermost spherical boundary
                 boundary_normal_funs.append(lambda r : -r / np.linalg.norm(r))
             else:
                 boundary_normal_funs.append(lambda r : r / np.linalg.norm(r))
-            
+
         else:
             raise ValueError("No shape function '%d' defined in raysca!" % shape)
 
@@ -723,7 +744,7 @@ def move_photon_to_boundary(b_fun, bn_fun, current_position, next_position):
     bound_tol = 1e-6
     return bound_tol * bn_fun(current_position) + current_position
 
-    
+
 def cartesian_product(*arrays):
     #NOTE: This is identical definition to ARSCA's utilities module
     #The rightmost array is the "innermost", so that cartprod[i] and
@@ -741,7 +762,7 @@ def stokes_times_muller(stokes,M):
     # stokes.shape = (n_wl,n_stokes)
     # M.shape = (n_wl,n_stokes,n_stokes)
     # NOTE: This is an ugly hack, and a desperate fix of some problems in other
-    # places. 
+    # places.
     if len(stokes.shape) < 2:
         stokes = stokes.reshape((1,stokes.size))
     out_stokes = np.nan * np.ones_like(stokes)
@@ -764,20 +785,20 @@ def set_up_RT_tasks(n_source, n_los, n_wavelength, n_compute_cores):
 
     If the setting single_trace_for_all_wl is enabled, wavelengths aren't used
     in the task generation.
-    
-    If the setting source_los_cartesian_product is enabled, then the each of 
-    different source and line of sight pairs are computed separately. 
+
+    If the setting source_los_cartesian_product is enabled, then the each of
+    different source and line of sight pairs are computed separately.
     """
 
     if single_trace_for_all_wl:
         wl_range = np.array([-1])
     else:
         wl_range = np.arange(n_wavelength)
-    
+
     all_tasks = cartesian_product(np.arange(n_source),
                                   np.arange(n_los),
                                   wl_range)
-    
+
     if not source_los_cartesian_product:
         # we'll slice the non-necessary elements out
         all_tasks = all_tasks[np.where(all_tasks[:,0] == all_tasks[:,1])]
@@ -801,7 +822,7 @@ def trace_photon(geom, interp_funs, refl_funs,
         step_length = main_beam_step_length
     else:
         step_length = scattering_step_length
-        
+
     idx_wl = geom['wavelength_index']
 
     transmissivity = np.ones_like(geom['incident_stokes'])
@@ -815,13 +836,13 @@ def trace_photon(geom, interp_funs, refl_funs,
             # NOTE: boundary_normal on the next line should probably be called with an
             # exact point of crossing, which could be computed. If this turns out
             # to be a problem, let's fix it.
-            
+
             photon_exiting_position = move_photon_to_boundary(geom['boundary'][b_idx], geom['boundary_normal'][b_idx], photon_position, next_position)
-            
+
             wl = geom['wavelength'] if geom['wavelength'].shape == () else geom['wavelength'][idx_wl]
             _, T, _ = refl_funs[b_idx].reflection(photon_direction, photon_direction, geom['boundary_normal'][b_idx](photon_exiting_position), wl)
             try:
-                _ = T[0,0,0] 
+                _ = T[0,0,0]
             except IndexError:
                 print("bloody hell")
             transmissivity = update_transmissivity(transmissivity,interp_funs,geom,current_position,photon_exiting_position)
@@ -837,11 +858,11 @@ def trace_photon(geom, interp_funs, refl_funs,
 
 def update_transmissivity(transmissivity,interp_funs,geom,current_position,next_position):
     step_length = np.linalg.norm(next_position - current_position)
-    
+
     n_abs = len(interp_funs['absorber'])
     n_sca = len(interp_funs['scatterer'])
     n_emi = len(interp_funs['emitter'])
-    
+
     idx_wl = geom['wavelength_index']
     if single_trace_for_all_wl:
         tau_size = idx_wl.size
@@ -849,7 +870,7 @@ def update_transmissivity(transmissivity,interp_funs,geom,current_position,next_
     else:
         tau_size = 1
         tau_idx = 0
-    
+
     # The extinction
     # The absorption and scattering are averaged over the distance end-points.
     # This is equivalent of doing a linear interpolation over the distance
@@ -874,7 +895,7 @@ def update_transmissivity(transmissivity,interp_funs,geom,current_position,next_
 
     transmissivity = np.exp(-tau_ext * step_length).repeat(4,axis=0).T * transmissivity
     return transmissivity
-    
+
 def compute_stokes(geom, interp_funs, sca_funs, refl_funs):
     """
     This is it. The main man. Head honcho. This guy'll handle all your problems,
@@ -908,7 +929,7 @@ def compute_stokes(geom, interp_funs, sca_funs, refl_funs):
     step_length = main_beam_step_length
 
     next_position = np.nan * np.ones((3,))
-    
+
     while not photon_in_domain(photon_position):
         # TODO: In this part, we should check also the exact crossing point
         # AND any effect which might come from crossing some certain boundary.
@@ -921,14 +942,14 @@ def compute_stokes(geom, interp_funs, sca_funs, refl_funs):
                 return stokes_in
             else:
                 return stokes_out
-    
+
         else:
             prev_position = photon_position
             photon_position = next_position
-            
+
     b_idx = find_crossed_boundary(geom['boundary'], prev_position, photon_position)
     photon_position = move_photon_to_boundary(geom['boundary'][b_idx], geom['boundary_normal'][b_idx], prev_position, photon_position)
-    
+
     if monte_carlo_mode:
         print("Create the initial Monte Carlo table here")
         raise Exception
@@ -947,7 +968,7 @@ def compute_stokes(geom, interp_funs, sca_funs, refl_funs):
             # If the photon escapes the domain, we'll stop tracing it
             # The photon has hit a boundary and next_position is outside the domain, while
             # photon_position is still on the inside.
-            
+
             b_idx = find_crossed_boundary(geom['boundary'], photon_position, next_position)
             next_position = move_photon_to_boundary(geom['boundary'][b_idx], geom['boundary_normal'][b_idx], photon_position, next_position)
             if single_scattering:
@@ -955,13 +976,13 @@ def compute_stokes(geom, interp_funs, sca_funs, refl_funs):
             transmissivity_main_beam = update_transmissivity(transmissivity_main_beam,interp_funs,geom,photon_position,next_position)
             photon_position = next_position
             photon_exiting_domain = True
-            
+
         else:
             if single_scattering:
                 scattering_step_length = step_length
             transmissivity_main_beam = transmissivity_main_beam * transmissivity_step
-            photon_position = next_position    
-        
+            photon_position = next_position
+
         if single_scattering:
             # scattering peel-off
             source_dir = geom['source_dir'](photon_position)
@@ -986,14 +1007,14 @@ def compute_stokes(geom, interp_funs, sca_funs, refl_funs):
                 R_fwd = forward_rotation(photon_direction, source_dir)
                 stokes_scattered = transmissivity_main_beam * transmissivity_peel_off * stokes_in @ S.T @ R_fwd.T
                 stokes_out = stokes_out + scattering_efficiency * stokes_scattered
-        
-        
+
+
     else: # while condition not longer satisfied
         if not photon_exiting_domain:
             #in this case, the beam is fully extincted while in the medium
             return stokes_out
-        
-    
+
+
     # In single-scatterings, we'll check the contribution of surface reflection
     # to the transmission, or if the beam exits toward the source.
     source_dir = geom['source_dir'](photon_position)
@@ -1026,11 +1047,11 @@ class Path:
         self.computed = False
         self.segment_ids = segment_ids # Only two segments in a RaySca path
         self.scatter_event = scatter_event # The scatter event joins the segments
-    
+
     def compute_transmissivity_direct(self,segments,subsegments,geom,interp_funs,sca_funs,refl_funs):
         print("Implement this!")
         #lol, eipä tarvinnukkaa
-        
+
     def compute_transmissivity(self,mb_segments,sca_segments,subsegments,geom,interp_funs,sca_funs,refl_funs):
         if len(self.segment_ids) != 2:
             # In this case, we should have only one segment, which means
@@ -1042,28 +1063,28 @@ class Path:
         seg0.compute_transmissivity(geom,subsegments,mb_segments,interp_funs)
         seg1 = sca_segments[self.segment_ids[1]]
         seg1.compute_transmissivity(geom,subsegments,sca_segments,interp_funs)
-        
+
         stokes_in = geom['incident_stokes'][0,:]
         #NOTE: ASSUME ONLY UNIFORMLY UNPOLARIZED INCIDENT RADIATION!
         stokes_out = np.zeros_like(geom['incident_stokes'])
         photon_direction = self.scatter_event['dir_in']
         photon_position = self.scatter_event['photon_position']
         source_dir = self.scatter_event['dir_out']
-        
+
         sca_wl = np.array([geom['wavelength'][0], geom['wavelength'][geom['wavelength'].size // 2], geom['wavelength'][-1]])
         #NOTE: ASSUME ONLY 3 DIFFERENT MULLER MATRICES IN THE BAND
         R_fwd = forward_rotation(photon_direction, source_dir)
-        
+
         if self.scatter_event['type'] == 'reflection':
             b_idx = self.scatter_event['b_idx']
             R, _, _ = refl_funs[b_idx].reflection(photon_direction, source_dir, geom['boundary_normal'][b_idx](photon_position), sca_wl)
-            
+
             stokes = R_fwd @ R @ stokes_in
             stokes_interp = interp1d(sca_wl,stokes,axis=0,kind='linear')
             #NOTE: WHEN DOING LINEAR INTERPOLATION, THE RESULTING STOKES MAY BE INTERPOLATED
             #IF MORE SMOOTH INTERPOLATION IS DESIRED, THEN THE MULLER NEEDS TO BE INTERPOLATED
             stokes_out[:] = stokes_interp(geom['wavelength'])
-        
+
         elif self.scatter_event['type'] == 'scattering':
             idx_sca = self.scatter_event['idx_sca']
             scattering_length = self.scatter_event['scattering_length']
@@ -1076,7 +1097,7 @@ class Path:
             stokes = R_fwd @ S @ stokes_in
 
             if len(stokes.shape) == 1:
-                # In this case sca_funs doesn't return a wavelength-dependent 
+                # In this case sca_funs doesn't return a wavelength-dependent
                 # scattering mueller matrix
                 stokes = stokes.reshape((1,stokes.size)).repeat(sca_wl.size,axis=0)
 
@@ -1090,14 +1111,14 @@ class Path:
                 stokes_out = geom['incident_stokes'].copy()
             else:
                 stokes_out = np.zeros_like(geom['incident_stokes'])
-                
+
         stokes_out = stokes_out.T
         np.multiply(seg0.transmissivity,stokes_out,out=stokes_out)
         if not self.scatter_event['type'] == 'pass-through':
             np.multiply(seg1.transmissivity,stokes_out,out=stokes_out)
         stokes_out = stokes_out.T
         self.transmissivity = stokes_out
-        
+
 class Segment:
     def __init__(self,subseg_ids,segment_ids):
         self.subseg_ids = subseg_ids
@@ -1123,19 +1144,19 @@ class Segment:
     def release_subsegments(self,subsegments):
         for ssid in self.subseg_ids:
             subsegments[ssid].release()
-        
+
 class Subsegment:
     def __init__(self,r_start,r_end):
         self.computed = False
         self.deleted = False
         self.r_start = r_start
         self.r_end = r_end
-    
+
     #from numba import jit
-    #@jit(nopython=True)    
+    #@jit(nopython=True)
     def compute(self,interp_funs):
         step_length = np.linalg.norm(self.r_end - self.r_start)
-            
+
         if not super_accurate:
             tau = None
             for idx_ext in range(len(interp_funs['extinction'])):
@@ -1146,7 +1167,7 @@ class Subsegment:
                     tau = ( tau
                           + interp_funs['extinction'][idx_ext](self.r_start)
                           + interp_funs['extinction'][idx_ext](self.r_end) )
-                
+
             self.transmissivity = np.exp(-0.5 * step_length * tau)#.repeat(4,axis=0).T
             # NOTE: If polarization-dependent transmissivity is needed, then
             # we need to uncomment the repeat method call.
@@ -1169,7 +1190,7 @@ def trace_photon_optimized(geom,
                  photon_position, photon_direction,
                  photon_in_domain,
                  step_length):
-    
+
     current_position = photon_position
     next_position = photon_position + step_length * photon_direction
     boundary_info = {}
@@ -1180,18 +1201,18 @@ def trace_photon_optimized(geom,
         # NOTE: boundary_normal on the next line should probably be called with an
         # exact point of crossing, which could be computed. If this turns out
         # to be a problem, let's fix it.
-        
+
         photon_exiting_position = move_photon_to_boundary(geom['boundary'][b_idx], geom['boundary_normal'][b_idx], photon_position, next_position)
-        
+
         next_position = photon_exiting_position # this is to ensure that the compute_stokes knows to exit too
         boundary_info['b_idx'] = b_idx
-        
+
     return (next_position, boundary_info)
 
 def get_main_path_event(refl_funs,b_idx):
     """
     This is to determine which event the main path does. Case-dependent, it will
-    be 
+    be
     'reflection' : in nadir and glint observation modes
     'pass-through' : in limb scattering and direct modes, as well as in ground-
     based direct and open sky observation modes
@@ -1209,7 +1230,7 @@ def compute_stokes_optimized(geom, interp_funs, sca_funs, refl_funs):
     """
     The idea here is to first trace all the paths through the atmosphere. This
     is easy in the single-scattering case. After all the paths are traced, then
-    transmissivity is computed afterwards. 
+    transmissivity is computed afterwards.
     """
 
     subsegments = []
@@ -1241,7 +1262,7 @@ def compute_stokes_optimized(geom, interp_funs, sca_funs, refl_funs):
     step_length = main_beam_step_length
 
     next_position = np.nan * np.ones((3,))
-    
+
     while not photon_in_domain(photon_position):
         # TODO: In this part, we should check also the exact crossing point
         # AND any effect which might come from crossing some certain boundary.
@@ -1254,18 +1275,18 @@ def compute_stokes_optimized(geom, interp_funs, sca_funs, refl_funs):
                 return stokes_in
             else:
                 return stokes_out
-    
+
         else:
             prev_position = photon_position
             photon_position = next_position
-            
+
     b_idx = find_crossed_boundary(geom['boundary'], prev_position, photon_position)
     photon_position = move_photon_to_boundary(geom['boundary'][b_idx], geom['boundary_normal'][b_idx], prev_position, photon_position)
-    
+
     photon_exiting_domain = False
-    
+
     while not photon_exiting_domain:
-        
+
         (next_position, boundary_info) = trace_photon_optimized(geom,
                                                      photon_position, photon_direction,
                                                      photon_in_domain,
@@ -1277,7 +1298,7 @@ def compute_stokes_optimized(geom, interp_funs, sca_funs, refl_funs):
             main_beam_segments.append(Segment([subsegid],[]))
         else:
             main_beam_segments.append(Segment([subsegid],[mb_segid]))
-        
+
         if 'b_idx' in boundary_info:
             # If the photon escapes the domain, we'll stop tracing it
             # The photon has hit a boundary and next_position is outside the domain, while
@@ -1289,14 +1310,14 @@ def compute_stokes_optimized(geom, interp_funs, sca_funs, refl_funs):
         else:
             if single_scattering:
                 scattering_length = step_length
-        photon_position = next_position    
-        
+        photon_position = next_position
+
         if single_scattering:
             # scattering peel-off
             mb_segid = len(main_beam_segments) - 1
-            #Note: mb_segid needs to be updated at this point in time due to 
+            #Note: mb_segid needs to be updated at this point in time due to
             #scattering Paths
-        
+
             source_dir = geom['source_dir'](photon_position)
             scatter_event = {'type' : 'scattering',
                              'dir_in' : photon_direction,
@@ -1320,7 +1341,7 @@ def compute_stokes_optimized(geom, interp_funs, sca_funs, refl_funs):
             for idx_sca in range(n_sca):
                 scatter_event['idx_sca'] = idx_sca
                 paths.append(Path([mb_segid,sca_segid],copy.deepcopy(scatter_event)))
-        
+
     #Create the final path
     source_dir = geom['source_dir'](photon_position)
     main_path_scatter_event = get_main_path_event(refl_funs,boundary_info['b_idx'])
@@ -1346,7 +1367,7 @@ def compute_stokes_optimized(geom, interp_funs, sca_funs, refl_funs):
     mb_segid = len(main_beam_segments) - 1
     sca_segid = len(scatter_segments) - 1
     paths.append(Path([mb_segid,sca_segid],scatter_event))
-    
+
     #compute all path transmissivities here
     for seg in main_beam_segments:
         seg.compute_transmissivity(geom,subsegments,main_beam_segments,interp_funs)
@@ -1371,7 +1392,7 @@ def compute_stokes_optimized(geom, interp_funs, sca_funs, refl_funs):
                     scatter_segments,subsegments,geom,interp_funs,
                     sca_funs,refl_funs)
         np.add(stokes_out,p.transmissivity,out=stokes_out)
-    
+
     return stokes_out
 
 def run_task_list(core_id, task_list, interp_funs, sca_funs, refl_funs, instrument, source, boundary,n_source, n_los, n_output_wavelength):
@@ -1426,7 +1447,7 @@ def get_compute_cores():
 
 def task_wrapper(datatup):
     (core_id, filename) = datatup
-    
+
     (medium, instrument, source, boundary) = read_input_nc(filename)
     n_compute_cores = get_compute_cores()
     n_source = source['type'][:].shape[0]
@@ -1450,7 +1471,7 @@ def run_simulation(filename):
     This is the main function of raysca.
     """
     read_settings()
-    
+
     (medium, instrument, source, boundary) = read_input_nc(filename)
 
     n_source = source['type'][:].shape[0]
@@ -1458,17 +1479,17 @@ def run_simulation(filename):
     n_output_wavelength = source['output_wavelength'][:].shape[0]
 
     n_compute_cores = get_compute_cores()
-    
+
     n_stokes = 4
     output_stokes = np.zeros((n_source,
                               n_los,
                               n_output_wavelength,
                               n_stokes))
-    
+
     if parallelization:
         core_ids = range(n_compute_cores)
         datatups = zip(core_ids,(filename,) * len(core_ids))
-    
+
         with multiprocessing.Pool(n_compute_cores) as p:
             out_stokes_list = p.map(task_wrapper, datatups)
     else:
