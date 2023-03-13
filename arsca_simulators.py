@@ -9,12 +9,14 @@ import numpy as np
 import sys
 import netCDF4
 
+path_of_this_file = os.path.dirname(os.path.realpath(__file__))
+
 case = 'foo'
 configuration = 'bar'
 
-siro_folder = "./rt_solvers/siro/"
-arsca_solver_folder = "./rt_solvers/arsca-solver/"
-raysca_folder = "./rt_solvers/raysca/"
+siro_folder = path_of_this_file + "/rt_solvers/siro/"
+arsca_solver_folder = path_of_this_file + "/rt_solvers/arsca-solver/"
+raysca_folder = path_of_this_file + "/rt_solvers/raysca/"
 
 relative_root_folder = "../../"
 
@@ -133,7 +135,7 @@ def change_raysca_settings(setting,value):
     Changes raysca settings in a settings file in usual arsca installation
     Both setting and value need to be in string format.
     """
-    settings_path = "./rt_solvers/raysca/raysca_settings.yaml"
+    settings_path = path_of_this_file + "/rt_solvers/raysca/raysca_settings.yaml"
     row_idx = "" # This needs to be preset so it exists in this scope
     # and preferably it needs to be non-index so an error gets raised if
     # such setting isn't find (just an extra countermeasure for the for-else)
