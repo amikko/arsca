@@ -1,0 +1,16 @@
+
+ $param
+	noph            = 5000
+	usepolar        = .true.
+	userefrac       = .false.
+	atmos_layers    = 1001
+	maxnoord        = 6
+	maxnolay        = 501
+	minweight       = 1.00000e-06
+	req             = 6.37100e+03
+	ratm            = 6.44100e+03
+	step            = 2.00000e+00
+	brdf_reflection = .false.
+	BRF_FILENAME    = 'input/brdf/new_snow.nc4'
+	AER_FILENAME    = 'input/miefiles/aer_O2A.dat'
+ $end
