@@ -14,8 +14,8 @@ import numpy as np
 import os.path
 import time
 import sys
-
-sys.path.insert(0, './hapi/')
+path_to_folder_containing_this_file = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, path_to_folder_containing_this_file + '/hapi/')
 import hapi
 
 import arsca_utilities

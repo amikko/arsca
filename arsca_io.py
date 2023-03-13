@@ -10,8 +10,8 @@ import numpy as np
 import netCDF4
 
 from arsca_utilities import unique_filename, if_folder_not_exist_then_create
-
-input_folder = "./solver_input/"
+path_to_folder_containing_this_file = os.path.dirname(os.path.realpath(__file__))
+input_folder = path_to_folder_containing_this_file + "/solver_input/"
 
 case = 'foo'
 configuration = 'bar'
