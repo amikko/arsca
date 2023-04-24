@@ -12,12 +12,12 @@ OBJECTS =   parameters.o \
 
 COMPILE = gfortran
 
-COPTIONS = -c -O3 -fbounds-check -mtune=native -W -Wall -pedantic -Wconversion -I/usr/local/include -L/usr/local/lib -lnetcdff -L/lib -lnetcdf -lnetcdf -ldl -lm -fopenmp
+COPTIONS = -c -O3 -fbounds-check -mtune=native -W -Wall -pedantic -Wconversion -I/usr/local/include -I/usr/include -L/usr/local/lib -L/usr/lib -lnetcdff -L/lib -lnetcdf -lnetcdf -ldl -lm -fopenmp
 
 EXECUTABLE = siro
 
 ${EXECUTABLE} : ${OBJECTS}
-	${COMPILE} -o ${EXECUTABLE} ${OBJECTS} -I/usr/local/include -L/usr/local/lib -lnetcdff -fopenmp
+	${COMPILE} -o ${EXECUTABLE} ${OBJECTS} -I/usr/local/include -I/usr/include -L/usr/local/lib -L/usr/lib -lnetcdff -fopenmp
 
 parameters.o : parameters.f90
 	${COMPILE} ${COPTIONS} parameters.f90 
