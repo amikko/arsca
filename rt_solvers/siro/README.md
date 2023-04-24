@@ -29,4 +29,6 @@ The first two files are created and modified using ARSCA. The last two files nee
 * Polarization of the BRDF surface is disabled due to unverified.
 * Some aerosols may cause abnormally high shot noise. The cause is most likely inadequate handling of singularities in the polaris subroutine.
 * Refraction is hard-coded to according to some pressure profile and it is not properly functioning for arbitrary profiles currently.
+
+## References
 [1]: https://doi.org/10.1029/1999JD900969
