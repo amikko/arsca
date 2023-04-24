@@ -29,13 +29,15 @@ def run(solver,input_file,extra_params=[]):
         raise KeyError("Chosen solver '%s' not recognized! \nAvailable solvers: %s." % (solver,solvers))
     if solver == 'siro':
         outfilename = configuration
-        launch_string = "./siro {} {}".format(relative_root_folder + input_file,outfilename)
+        #launch_string = "./siro {} {}".format(relative_root_folder + input_file,outfilename)
+        launch_string = "./siro {} {}".format(input_file,outfilename)
+        curr_folder = os.getcwd()
         os.chdir(siro_folder)
         siro_proc = subprocess.Popen(launch_string,shell=True)
         siro_proc.communicate()
         if siro_proc.returncode != 0:
             raise RuntimeError("Siro crashed!")
-        os.chdir(relative_root_folder)
+        os.chdir(curr_folder)
         return load_siro_result_file('radiance' + outfilename)
     elif solver == 'arsca-solver':
         sys.path.append(arsca_solver_folder)

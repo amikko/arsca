@@ -145,7 +145,8 @@ Unit conventions:
 
 """
 
-#TODO: n_parameter dimension to other stuff too
+#TODO: disentangle the n_parameters from the scatterers and surfaces: not both 
+# need to have the same amount of parameters.
 
 #TODO: Add checks for input parameters
 #TODO: Fill all missing values into the dicts
@@ -205,7 +206,7 @@ def create_simulator_input(medium,instrument,source,
             scatterer_kernel (n_scatterer) ('i4')
             scatterer_kernel_parameter (n_parameter, n_scatterer) ('f8')
             interpolation_function (n_medium_positions) ('i4')
-            interpolation_parameter (n_medium_positions) ('i4')
+            interpolation_parameter (n_medium_positions) ('f8')
         instrument (Group)
             position (n_los, n_coordinate) ('f8')
             view_vector (n_los, n_coordinate) ('f8')
