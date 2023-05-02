@@ -6,22 +6,9 @@ Created on Fri May 22 15:35:11 2020
 @author: mikkonea
 """
 
-# Tässä studyssä on tärkeää todeta, että vaikka Siro on validoitu UV-aallonpituuksilla
-# niin ei voida suoraan sanoa, että ne matchaa VIS-NIR-SWIR alueilla, vaikka siellä
-# ilmiöt ovatkin yksinkertaisempia. Vai voidaanko, ehkä. Sironnat on pienempiä.
-# En tiiä tarviikohan limb-mittausta tehdä. 
 
-# Nadir/Glint/Limb
-# No scattering/Rayleigh/Rayleigh+Aerosol
-# Kaikki kolme bändiä
-# Sopivat vakio-albedot
-
-# 250 nm, (sulfaatti), n_real = 1.61, 1.58, 1.57 in each bands respectively
-# 
-
-# pitääkö plotata esittelydataa, esim. että tämmönen oli nyt se käytetty kaasuprofiili
-# 
-
+#import sys
+#sys.path.insert(0,'/home/amikko/Projects/arsca')
 import numpy as np
 import netCDF4
 from scipy.interpolate import interp1d
@@ -29,45 +16,55 @@ import scipy.optimize
 import arsca
 import pickle
 
-validation_fname = 'validation_study_radiances_oops_all_siros_noeps.pick'
-validation_fname = 'validation_study_radiances_oops_all_siros.pick'
-
-# joitain juttuja tehdään jokaisessa ongelmanmäärittelyssä
-# oisko niihin jotain työkaluja nopeuttamiseksi?
-
-# pitää olla jokin layout, jonka pohjalta voi rakentaa inputin
+validation_fname = 'validation_study_radiances_final_v2.pick'
 
 #oco2 lims: 0.758-0.772, 1.594-1.619, 2.042-2.082
 
-        
-# TODO: Laskeppa AOD!
-# TODO: Troposfääriaerosoleja nadiirin ja glinttiin (n 2 km korkeudessa)
-# TODO: OCO-2:n luminen targetti voisi olla dataa parhaaseen malliin! 
-def create_phase_matrices():
-    arsca.util.aerosol_input_from_online_mie_calc('sulfate_mie_O2A.txt','aer_O2A_v2.dat',False)
-    arsca.util.aerosol_input_from_online_mie_calc('sulfate_mie_WCO2.txt','aer_WCO2_v2.dat',False)
-    arsca.util.aerosol_input_from_online_mie_calc('sulfate_mie_SCO2.txt','aer_SCO2_v2.dat',False)
+# aerosolit
+# sulfaatit: r = 0.125 µm
+# 0.765µm: 1.61 - i0.0
+# 1.61µm: 1.58 - i0.0
+# 2.06µm: 1.57 - i0.0
+# black carbon (diesel soot) r = 0.05 µm
+# 0.765µm: 1.6835 - i0.30050 
+# 1.61µm: 1.8625 - i0.34050
+# 2.06µm: 1.9210 - i0.34800
 
-aerosol_names = ['aer_O2A.dat', 'aer_WCO2.dat', 'aer_SCO2.dat']
-noph_siro = 5000
+
+def create_phase_matrices():
+    arsca.util.aerosol_input_from_online_mie_calc('sulfate_mie_O2A.txt','sulf_O2A.dat',False)
+    arsca.util.aerosol_input_from_online_mie_calc('sulfate_mie_WCO2.txt','sulf_WCO2.dat',False)
+    arsca.util.aerosol_input_from_online_mie_calc('sulfate_mie_SCO2.txt','sulf_SCO2.dat',False)
+    arsca.util.aerosol_input_from_online_mie_calc('soot_mie_O2A.txt','soot_O2A.dat',False)
+    arsca.util.aerosol_input_from_online_mie_calc('soot_mie_WCO2.txt','soot_WCO2.dat',False)
+    arsca.util.aerosol_input_from_online_mie_calc('soot_mie_SCO2.txt','soot_SCO2.dat',False)
+
+aerosol_names = ['sulf_O2A.dat', 'sulf_WCO2.dat', 'sulf_SCO2.dat']
+noph_siro = 50000
 for band_choice in range(3):
-    for scatterers in range(3):
-        for geom_choice in ['glint','nadir','limb']:
+    for scatterers in range(1,3):
+        for geom_choice in ['limb','nadir','glint']:
             #for geom_choice in ['nadir','limb']:
-             
-            solar_zens = [35,50,60]
+            print(band_choice,scatterers,geom_choice)
+            if geom_choice == 'limb':
+                arsca.simu.change_raysca_settings('main_beam_step_length',1.0)
+            else:
+                arsca.simu.change_raysca_settings('main_beam_step_length',1.0)
+            solar_zens = [60,35,50]
             #solar_zens = [0,0,60]
             #solar_zens = [35,0,60]
-            solar_azis = [0,0,120]
+            solar_azis = [120,0,0]
             
-            compute_siro = True
+            compute_siro = False
             if compute_siro:
                 siro_custom_settings = {
                     'AER_FILENAME' : "'input/miefiles/%s'" % aerosol_names[band_choice],
                     'noph' : noph_siro,
-                    'ratm' : 6371.0 + 70.0}
+                    'ratm' : 6371.0 + 70.0,
+                    'step' : 1.0}
                 arsca.simu.create_siro_settings(siro_custom_settings)
             arsca.simu.change_raysca_settings('aerosol_file',aerosol_names[band_choice])
+            arsca.simu.change_raysca_settings('parallelization',False)
             band_names = ['o2a','wco2','sco2']
             scatter_names = ['no_sca','rayleigh','rayleigh+mie']
             #scatter_names = ['no_sca']
@@ -88,7 +85,8 @@ for band_choice in range(3):
             
             # this -v is to enable recomputation of mie scattering things
             #if scatterers != 2 and not np.isnan(radiance_dict[geom_choice][band_names[band_choice]][scatter_names[scatterers]][0]).all():
-            if not np.isnan(radiance_dict[geom_choice][band_names[band_choice]][scatter_names[scatterers]][0]).all():
+            #if not np.isnan(radiance_dict[geom_choice][band_names[band_choice]][scatter_names[scatterers]][0]).all():
+            if False:
                 #raise ValueError("This configuration already computed!") # this is to "return" or halt
                 print("This configuration already computed!")
                 continue
@@ -98,7 +96,8 @@ for band_choice in range(3):
             #band_albs = [0.9,0.1,0.02] # solar zenith 55 from the picture
             #band_albs = [0.87651711, 0.17815365, 0.05095223] # from the model
             band_albs = [0.88, 0.18, 0.05] # from the model
-    
+            band_albs = [0.8, 0.8, 0.8] # from the model
+            band_albs = [0.15, 0.15, 0.15]
             arsca.set_case("raysca_validation_study_newspec_%s" % band_names[band_choice])
             arsca.set_configuration("validation_study_%s" % band_names[band_choice])
             
@@ -182,15 +181,22 @@ for band_choice in range(3):
             if scatterers == 2: # mie aerosols
                 # it is constant through the whole band; from the original mie file
                 max_conc = 500
-                mean_conc_alt = 15
+                if geom_choice == 'limb':
+                    mean_conc_alt = 15
+                else:
+                    mean_conc_alt = 2.5
                 std_conc_alt = 2.5
+                
                 aerosols = max_conc * np.exp(-((altitudes - mean_conc_alt) / std_conc_alt) ** 2 )
                 aerosol_xsec = np.array([0.017075, 0.00084129, 0.00030242]) # micron^2
                 aerosol_xsec = aerosol_xsec * (1e-6 / 1e-2) ** 2 #cm^2
                 aerosol_xsec_band = aerosol_xsec[band_choice] * np.ones((1,n_wl))
                 xsec_sca[:,:,1] = np.repeat(aerosol_xsec_band.reshape((1,n_wl)),n_medium_positions,axis=0)
+                current_aod_765 = np.sum(np.diff(altitudes) * aerosols[:-1] * aerosol_xsec[0] * 1e5)
+                aod_765 = 0.05 # at nadir
+                aerosols = aerosols * aod_765 / current_aod_765
                 medium['scatterer'][:,1] = aerosols
-                
+            
             medium['scattering_cross_section'] = xsec_sca
             
             # zero stands for rayleigh-scattering
@@ -237,9 +243,6 @@ for band_choice in range(3):
                 
                 medium['absorbing_cross_section'][:,:,abs_idx] = xsec_column
                         
-            
-            
-            
             #emitters and emissivities
             medium['emitter'] = np.zeros((n_medium_positions,n_emitter))
             medium['medium_emissivity'] = np.zeros((n_medium_positions,n_wl,4,n_emitter))
@@ -322,6 +325,11 @@ for band_choice in range(3):
             input_fname = arsca.io.create_simulator_input(medium,instrument,source,boundary)
             
             
+            raysca_start = time.time()
+            radiance_raysca = arsca.simu.run('raysca',input_fname)
+            #radiance_raysca = [0]
+            
+            raysca_time = time.time() - raysca_start
             if compute_siro:
                 siro_start = time.time()
                 radiance_siro = arsca.simu.run('siro',input_fname)
@@ -330,18 +338,14 @@ for band_choice in range(3):
             #else:
             #    rads_siro.append(np.nan)
             
-            raysca_start = time.time()
-            #radiance_raysca = arsca.simu.run('raysca',input_fname)
-            radiance_raysca = [0]
-            
-            raysca_time = time.time() - raysca_start
             
     
             #rads_raysca.append(radiance_raysca)
             print(str(scatterers) + geom_choice)
-            print(siro_time)
+            #print(siro_time)
             print(raysca_time)
-    
+            if not compute_siro:
+                radiance_siro = radiance_dict[geom_choice][band_names[band_choice]][scatter_names[scatterers]][1]
             radiance_dict[geom_choice][band_names[band_choice]][scatter_names[scatterers]] = [radiance_raysca, radiance_siro]
             
             with open(validation_fname,'wb') as fhandle:
