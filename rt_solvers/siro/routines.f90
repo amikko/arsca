@@ -343,12 +343,25 @@ module routines
       integer :: j,nohalf,lay
 
       real(kind=sp) :: step_cm,vakio2,vakio3,vakio4,cm_in_km
-      real(kind=sp) :: total_dist, step_length, sat_r
-      integer :: alt_idx, abs_idx, sca_idx
+      real(kind=sp) :: total_dist, step_length, sat_r, small_step_cm, small_step
+      integer :: alt_idx, abs_idx, sca_idx, step_diminisher
       logical :: in_atmos
+
+      ! This was added by Antti on 4.5.2023 since tables_general doesn't
+      ! take into account the last small and incomplete step. Thus the contribution
+      ! of bottom layers of the atmosphere aren't handled properly in Earth viewing
+      ! geometries. This can cause up to 10% biases in polarization parameters
+      ! in SWIR wavelengths.
+      ! Since this is a precomputed table, this shouldn't cause large compuation
+      ! overhead and this should ease the last step problem. However, this doesn't
+      ! fix it exactly.
+
+      step_diminisher = 4
 
       cm_in_km = 100000.0_sp
       step_cm = step * cm_in_km
+      small_step_cm = step_cm / step_diminisher
+      small_step = step / step_diminisher
 
       x_test = satx
       y_test = saty
@@ -406,14 +419,14 @@ module routines
 
         tauabs = 0.0_sp
         do abs_idx=1,noabs
-          tauabs = tauabs + abs_prof(alt_idx,abs_idx) * wl_abs_xsec(alt_idx,abs_idx) * step_cm
+          tauabs = tauabs + abs_prof(alt_idx,abs_idx) * wl_abs_xsec(alt_idx,abs_idx) * small_step_cm
         end do
 
         kumabs = kumabs + tauabs
 
         tausir = 0.0_sp
         do sca_idx=1,nosir
-          tausir = tausir + sca_prof(alt_idx,sca_idx) * wl_sca_xsec(alt_idx,sca_idx) * step_cm
+          tausir = tausir + sca_prof(alt_idx,sca_idx) * wl_sca_xsec(alt_idx,sca_idx) * small_step_cm
           !write(*,*) sca_prof(alt_idx,sca_idx), wl_sca_xsec(alt_idx,sca_idx), step_cm
           process(j,sca_idx) = tausir
         end do
@@ -446,9 +459,9 @@ module routines
 
         call calcrefra(x(j),y(j),z(j),dx(j),dy(j),dz(j),dxnew,dynew,dznew,wlfact)
         !write(*,*)dxnew, dynew, dznew
-        x(j+1) = x(j) + step*(dx(j)+dxnew)/2.0_sp
-        y(j+1) = y(j) + step*(dy(j)+dynew)/2.0_sp
-        z(j+1) = z(j) + step*(dz(j)+dznew)/2.0_sp
+        x(j+1) = x(j) + small_step*(dx(j)+dxnew)/2.0_sp
+        y(j+1) = y(j) + small_step*(dy(j)+dynew)/2.0_sp
+        z(j+1) = z(j) + small_step*(dz(j)+dznew)/2.0_sp
 
         dx(j+1) = dx(j)
         dy(j+1) = dy(j)
