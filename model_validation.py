@@ -7,8 +7,8 @@ Created on Fri May 22 15:35:11 2020
 """
 
 
-#import sys
-#sys.path.insert(0,'/home/amikko/Projects/arsca')
+import sys
+sys.path.insert(0,'/home/mikkonea/Projects/arsca')
 import numpy as np
 import netCDF4
 from scipy.interpolate import interp1d
@@ -16,6 +16,11 @@ import scipy.optimize
 import arsca
 import pickle
 
+validation_fname = 'validation_study_radiances_oops_all_siros_noeps.pick'
+validation_fname = 'validation_study_radiances_oops_all_siros.pick'
+validation_fname = 'validation_study_radiances_low_alt_aero_high_alb.pick'
+#validation_fname = 'validation_study_radiances_low_alt_aero_zero_alb_many_photons.pick'
+#validation_fname = 'vasdflidation_study_radiances_low_alt_aero_zero_alb_many_photons.pick'
 validation_fname = 'validation_study_radiances_final_v2.pick'
 
 #oco2 lims: 0.758-0.772, 1.594-1.619, 2.042-2.082
@@ -40,22 +45,25 @@ def create_phase_matrices():
     arsca.util.aerosol_input_from_online_mie_calc('soot_mie_SCO2.txt','soot_SCO2.dat',False)
 
 aerosol_names = ['sulf_O2A.dat', 'sulf_WCO2.dat', 'sulf_SCO2.dat']
-noph_siro = 50000
+noph_siro = 10000
 for band_choice in range(3):
     for scatterers in range(1,3):
         for geom_choice in ['limb','nadir','glint']:
+            #for geom_choice in ['nadir','glint']:
             #for geom_choice in ['nadir','limb']:
             print(band_choice,scatterers,geom_choice)
             if geom_choice == 'limb':
                 arsca.simu.change_raysca_settings('main_beam_step_length',1.0)
+                arsca.simu.change_raysca_settings('scattering_step_length',1.0)
             else:
-                arsca.simu.change_raysca_settings('main_beam_step_length',1.0)
+                arsca.simu.change_raysca_settings('main_beam_step_length',0.25)
+                arsca.simu.change_raysca_settings('scattering_step_length',1.0)
             solar_zens = [60,35,50]
             #solar_zens = [0,0,60]
             #solar_zens = [35,0,60]
             solar_azis = [120,0,0]
             
-            compute_siro = False
+            compute_siro = True
             if compute_siro:
                 siro_custom_settings = {
                     'AER_FILENAME' : "'input/miefiles/%s'" % aerosol_names[band_choice],
@@ -98,6 +106,7 @@ for band_choice in range(3):
             band_albs = [0.88, 0.18, 0.05] # from the model
             band_albs = [0.8, 0.8, 0.8] # from the model
             band_albs = [0.15, 0.15, 0.15]
+            #band_albs = [0.0, 0.0, 0.0]
             arsca.set_case("raysca_validation_study_newspec_%s" % band_names[band_choice])
             arsca.set_configuration("validation_study_%s" % band_names[band_choice])
             
@@ -297,7 +306,8 @@ for band_choice in range(3):
             # BOUNDARY DEFINITIONS
             boundary = {}
             boundary['shape'] = np.array([1,1]) #both are spherical surfaces
-            boundary['parameter'] = np.array([6371.0,6371.0 + 70.0]) #the radius of the spheres
+            boundary['parameter'] = np.array([6371.0,6371.0 + 70]) #the radius of the spheres
+            
             #reflections from the boundary (0=pass through,1=lambertian,2=semispecular,3=brdf)
             # TODO: Hide this to the background
             #boundary['reflection_kernel'] = np.array([3,0])
@@ -342,10 +352,12 @@ for band_choice in range(3):
     
             #rads_raysca.append(radiance_raysca)
             print(str(scatterers) + geom_choice)
-            #print(siro_time)
+            
             print(raysca_time)
             if not compute_siro:
                 radiance_siro = radiance_dict[geom_choice][band_names[band_choice]][scatter_names[scatterers]][1]
+            else:
+                print(siro_time)
             radiance_dict[geom_choice][band_names[band_choice]][scatter_names[scatterers]] = [radiance_raysca, radiance_siro]
             
             with open(validation_fname,'wb') as fhandle:

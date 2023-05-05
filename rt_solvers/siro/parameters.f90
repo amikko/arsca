@@ -23,7 +23,7 @@ module parameters
        crossize       = 11, & ! ALTIUS
        o3crossize     = 11, & ! ALTIUS
        no2crossize    = 11, & ! this is actually the aerosol absorption cross-section for ALTIUS
-       maxtable       = 20000
+       maxtable       = 80000
        !mielength      = 210                     ! length of mie file
        !mielength      = 5400
        !mielength      = 251

@@ -98,7 +98,7 @@ for b_idx, bkey in enumerate(band_keys):
             
             #plt.figure(figsize=(8,6))
             #f, (axI, axQ, axErr) = plt.subplots(1, 3, sharey=True, figsize=(8,6))
-            f, temptup = plt.subplots(nrows=2, ncols=2,sharex=True, figsize=(9,5), constrained_layout=True)
+            f, temptup = plt.subplots(nrows=2, ncols=2,sharex=True, figsize=(9,5), constrained_layout=True, dpi=300)
             (axI, axQ) = temptup[0]
             (axErrI, axErrQ) = temptup[1]
             wl_range = band_lims[b_idx] # nm
@@ -135,7 +135,7 @@ for b_idx, bkey in enumerate(band_keys):
             #axI.legend()
             #axQ.legend()
             #axErr.legend()
-            img_name = "%s_%s_%s.png" % (gkey,bkey,skey)
+            img_name = "%s_%s_%s.jpg" % (gkey,bkey,skey)
             plt.savefig(img_folder_name + img_name)
             
             #plt.show()
@@ -195,6 +195,17 @@ for b_idx, bkey in enumerate(band_keys):
 
 scatter_names = ['no_sca','rayleigh','rayleigh+mie']
 mode_color = ['b','r','y']
+
+binlims1 = {'o2a' : [[-20,5],[-10,10]],
+           'wco2' : [[-15,4],[-7.5,10]],
+           'sco2' : [[-15,5],[-7.5,10]]}
+
+binlims2 = {'o2a' : [[-40,8],[-35,15]],
+           'wco2' : [[-20,7],[-10,15]],
+           'sco2' : [[-17,6],[-10,15]]}
+
+binlims = {'rayleigh' : binlims1,
+         'rayleigh+mie' : binlims2}
 for b_idx, bkey in enumerate(band_keys):
     
     try:
@@ -203,7 +214,7 @@ for b_idx, bkey in enumerate(band_keys):
         continue
     
     for s_idx, skey in enumerate(scatter_names):
-        f, temptup = plt.subplots(nrows=2, ncols=2, figsize=(9,5), constrained_layout=True)
+        f, temptup = plt.subplots(nrows=2, ncols=2, figsize=(9,5), constrained_layout=True, dpi=300)
         (axIss, axQss) = temptup[0]
         (axI, axQ) = temptup[1]
         axQ.set_title('Q, multiple scattering')
@@ -234,12 +245,16 @@ for b_idx, bkey in enumerate(band_keys):
             errspec_Iss = ( I_raysca[err_maskIss] - I_siro_ss[err_maskIss]) / I_siro_ss[err_maskIss]
             errspec_Qss = ( Q_raysca[err_maskQss] - Q_siro_ss[err_maskQss]) / Q_siro_ss[err_maskQss]
             # Note: First time escaping %-sign in %-formatted string. Why is it %% and not \%?!
-            f.suptitle('Relative error (%%) (Raysca - Siro) / Siro \n  100 bins, %d wavelengths, %s band, %s' % (I_raysca.size,band_names[b_idx], scattering_title[s_idx]))
-            axI.hist(100*errspec_I,100,alpha=0.6,color=mode_color[g_idx])
-            axQ.hist(100*errspec_Q,100,alpha=0.6,color=mode_color[g_idx])
-            axIss.hist(100*errspec_Iss,100,alpha=0.6,label=gkey,color=mode_color[g_idx])
-            axQss.hist(100*errspec_Qss,100,alpha=0.6,color=mode_color[g_idx])
-        img_name = "errorhist_%s_%s.png" % (bkey,skey)
+            binnum = 100
+            f.suptitle('Relative error (%%) (Raysca - Siro) / Siro \n  %d bins, %d wavelengths, %s band, %s' % (binnum,I_raysca.size,band_names[b_idx], scattering_title[s_idx]))
+            binlim = binlims[skey][bkey]
+            binsI = np.linspace(binlim[0][0],binlim[0][1],binnum+1)
+            binsQ = np.linspace(binlim[1][0],binlim[1][1],binnum+1)
+            axI.hist(100*errspec_I,binsI,alpha=0.6,color=mode_color[g_idx])
+            axQ.hist(100*errspec_Q,binsQ,alpha=0.6,color=mode_color[g_idx])
+            axIss.hist(100*errspec_Iss,binsI,alpha=0.6,label=gkey,color=mode_color[g_idx])
+            axQss.hist(100*errspec_Qss,binsQ,alpha=0.6,color=mode_color[g_idx])
+        img_name = "errorhist_%s_%s.jpg" % (bkey,skey)
         axI.set_xlabel("Relative error (%)")
         axQ.set_xlabel("Relative error (%)")
         axIss.set_ylabel('# of wavelengths')
