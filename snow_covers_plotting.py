@@ -60,10 +60,12 @@ errlistQ = []
 siro_plotting = False
 plot_spectra = True
 
+multkeys = ['',', (10x)',', (100x)']
+multkeys = ['','','']
 for g_idx,gkey in enumerate(geom_names):
     #for zen_i in range(len(solar_zens)):
     for zen_i in zen_ang_choices[g_idx]:
-        f, (axI, axQ) = plt.subplots(1, 2, figsize=(14,4))
+        f, (axI, axQ) = plt.subplots(1, 2, figsize=(14,4), dpi=300)
         max_I = -1
         min_I = 1
         max_Q = -1
@@ -77,8 +79,9 @@ for g_idx,gkey in enumerate(geom_names):
                 rads = radiance_dict[gkey][bkey][akey]
                 I_raysca = np.mean(mult_coeffs[b_idx] * radi * rads[0][zen_i,:,:,0],axis=1)
                 Q_raysca = np.mean(mult_coeffs[b_idx] * (radi * rads[0][zen_i,:,:,1]),axis=1)
-                axI.plot(los_angs,I_raysca,raysca_line[b_idx][a_idx],label='%s, %s' % (band_names[b_idx],akey))
-                axQ.plot(los_angs,Q_raysca,raysca_line[b_idx][a_idx],label='%s, %s' % (band_names[b_idx],akey))
+                multstr = multkeys[b_idx]
+                axI.plot(los_angs,I_raysca,raysca_line[b_idx][a_idx],label='%s, %s%s' % (band_names[b_idx],akey,multstr))
+                axQ.plot(los_angs,Q_raysca,raysca_line[b_idx][a_idx],label='%s, %s%s' % (band_names[b_idx],akey,multstr))
                 max_I = np.max(I_raysca) if np.max(I_raysca) > max_I else max_I
                 min_I = np.min(I_raysca) if np.min(I_raysca) < min_I else min_I
                 max_Q = np.max(Q_raysca) if np.max(Q_raysca) > max_Q else max_Q
@@ -93,10 +96,10 @@ for g_idx,gkey in enumerate(geom_names):
         axI.set_title('Stokes I')
         axQ.set_title('Stokes Q')
         axI.legend()
-        axQ.legend()
+        #axQ.legend()
         #plt.show()
                 
-        img_name = "angs_%s_%s_%d.png" % (gkey,bkey,solar_zens[zen_i])
+        img_name = "angs_%s_%s_%d.jpg" % (gkey,bkey,solar_zens[zen_i])
         plt.savefig(img_folder_name + img_name)
 
 
@@ -110,7 +113,7 @@ if plot_spectra:
         for g_idx,gkey in enumerate(geom_names):
             for zen_i in zen_ang_choices[g_idx]:
                 ang_choices = [0,ang_indices[zen_i]]
-                f, (axI, axQ) = plt.subplots(1, 2, figsize=(14,4))
+                f, (axI, axQ) = plt.subplots(1, 2, figsize=(14,4),dpi=300)
                 
                 for a_idx, akey in enumerate(['soot','sulphates','no aerosol']):
                     for choice_idx,ang_idx in enumerate(ang_choices):
@@ -155,9 +158,9 @@ if plot_spectra:
                 #axErr.set_title('Absolute error (RaySca - Siro)')
                 #axErr.set_ylim([-1.0,1.0])
                 axI.legend()
-                axQ.legend()
+                #axQ.legend()
                 #axErr.legend()
-                img_name = "%s_%s_%d.png" % (gkey,bkey,solar_zens[zen_i])
+                img_name = "%s_%s_%d.jpg" % (gkey,bkey,solar_zens[zen_i])
                 plt.savefig(img_folder_name + img_name)
                 #plt.show()
                 

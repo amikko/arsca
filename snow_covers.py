@@ -6,8 +6,8 @@ Created on Fri May 22 15:35:11 2020
 @author: mikkonea
 """
 
-#import sys
-#sys.path.insert(0,'/home/amikko/Projects/arsca')
+import sys
+sys.path.insert(0,'/home/mikkonea/Projects/arsca')
 import numpy as np
 import netCDF4
 from scipy.interpolate import interp1d
@@ -15,7 +15,11 @@ import scipy.optimize
 import arsca
 import pickle
 
+#validation_fname = 'snow_surf_comparison_new_art.pick'
+#validation_fname = 'snow_surf_testing.pick'
+validation_fname = 'snow_surf_v5.pick'
 validation_fname = 'snow_surf_final_v1.pick'
+#validation_fname = 'water_surf_simulation.pick'
 
 #oco2 lims: 0.758-0.772, 1.594-1.619, 2.042-2.082
 # aerosolit
