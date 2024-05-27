@@ -8,6 +8,7 @@ import arsca_reflectance as reflect
 import arsca_cross_sections as xsec
 import arsca_instrument as inst
 import arsca_utilities as util
+import arsca_emission as emi
 
 """
 Cases and Configurations
