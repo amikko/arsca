@@ -8,6 +8,7 @@ Created on Mon Oct 11 15:23:03 2021
 
 import numpy as np
 from scipy.interpolate import interp1d
+import netCDF4
 
 class BRDF:
     zen_inc = []
@@ -50,6 +51,38 @@ class BRDF:
         
         return(R, T, dir_out)
         
+    
+class SpatVarLamb:
+    def __init__(self,wavelength,reflectances):
+        self.wavelength = wavelength
+        self.reflectances = reflectances
+        self.current_pixel = 0 
+        # NOTE: in this case the refl_fun interface doesn't take position into
+        # account. This is a problem with the varying surface reflectance. A
+        # quick fix is to run the code sequentially and let the function to 
+        # store a 'state'. This is very ugly and will cause problems later on,
+        # but necessary now.
+    def reflection_lambertian_spatial(self,dir_in, dir_out, surf_norm, wl):
+        #shape_size = 15
+        shape_size = self.reflectances.shape[1]
+        j = self.current_pixel % shape_size
+        i = self.current_pixel // shape_size
+        # This might seem wrong, but this is in line with the current ARSCA
+        # camera_fov function.
+        self.current_pixel += 1
+        alb_interp_fun = interp1d(self.wavelength,self.reflectances[i,j,:],fill_value='extrapolate')
+        albedo = alb_interp_fun(wl)
+        lambertian_coeff = albedo * np.max([np.dot(surf_norm,dir_out) / np.pi,0])
+        R_diff = np.zeros((4,4))
+        R_diff[0,0] = 0.5
+        R_diff[1,1] = 0.5
+        R_diff[0,1] = 0.5
+        R_diff[1,0] = 0.5
+        R = create_wl_stack(R_diff,wl.size)
+        R = lambertian_coeff[:, np.newaxis, np.newaxis] * R
+        T = np.zeros((wl.size,4,4))
+        return (R,T,dir_out)
+    
 class Reflection:
     refl_type = 0
     refl_param = []
@@ -69,13 +102,17 @@ class Reflection:
             # Lambertian reflection
             self.reflection = self.reflection_lambertian
         elif self.refl_type == 2:
-            # "Semispecular" reflection
-            # Actually just lambertian
-            self.reflection = self.reflection_lambertian
-            print("Semispecular (selection 2) is just Lambertian!")
+            # Lambertian with spatial variance
+            if self.input_file == '':
+                print("No input file for spatially varying Lambertian specified but it is required!")
+            with netCDF4.Dataset(self.input_file) as ds:
+                b = {}
+                for key in ds.variables.keys():
+                    b[key] = ds[key][:].data
+            self.spatvarlamb = SpatVarLamb(b['wavelengths'], b['reflectance'])
+            self.reflection = self.spatvarlamb.reflection_lambertian_spatial
         elif self.refl_type == 3:
             # BRDF reflection
-            import netCDF4 
             if self.input_file == '':
                 print("No input file specified but BRDF requested!")
             with netCDF4.Dataset(self.input_file) as ds:
