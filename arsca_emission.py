@@ -16,6 +16,7 @@ def plancks_law(wl,T):
     h = 6.62607015e-34 # J Hz^-1
     k_B = 1.380649e-23 # J / K^-1
     coeff = 2 * h * nu ** 3 / (c ** 2)
-    denom = np.exp(h * nu / (k_B * T)) - 1
-    B_nu = coeff / denom
+    nu_rep = np.repeat(nu.reshape((wl.size,1)),T.size,axis=1)
+    denom = np.exp(h * nu_rep / (k_B * T)) - 1
+    B_nu = coeff / denom.T
     return B_nu
