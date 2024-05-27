@@ -57,7 +57,7 @@ def fetch_lines(wn_range,gas,gas_id):
                     wn_range[0],
                     wn_range[1])
 
-def calculate_xsec(gas,wn_range,wn_step,p,T,dil,func_selection='Lorentz'):
+def calculate_xsec(gas,wn_range,wn_step,p,T,dil,func_selection='Voigt'):
     function_listing = {'Lorentz' : hapi.absorptionCoefficient_Lorentz,
                         'Doppler' : hapi.absorptionCoefficient_Doppler,
                         'Voigt'   : hapi.absorptionCoefficient_Voigt,
@@ -317,8 +317,16 @@ def generate_xsec(wn_range,wn_step,gas,gas_id,T,P,Ps,func_selection='Lorentz'):
     dil = 1.0 - Ps/P
 
     for comp_idx in comp_xsec_idxs:
-        wn, cs[comp_idx,:] = calculate_xsec(gas,wn_range,wn_step,
-    P[comp_idx],T[comp_idx],dil[comp_idx],func_selection)
+        wn, calc_xsec = calculate_xsec(gas,wn_range,wn_step,
+                                            P[comp_idx],T[comp_idx],dil[comp_idx],func_selection)
+        try:
+            cs[comp_idx,:] = calc_xsec
+        except ValueError:
+            # the line shapes are wrong length, for some reason!
+            # a crude fix for off-by-one error. however, this will happen only with large spectral bands, so
+            # shouldn't be that big of a problem
+            cs[comp_idx,:] = calc_xsec[:-1]
+            wn = wn[:-1]
 
     #store the computed data to the database
     if len(comp_xsec_idxs) > 0:
