@@ -145,7 +145,7 @@ def read_settings():
     global single_trace_for_all_wl, parallelization, process_count, show_progress
     global source_los_cartesian_product, aerosol_file, brdf_file, optimized_mode
     global stokes_output_format, super_accurate, interpolator
-    global gaussian_drop_off, gaussian_sum
+    global gaussian_drop_off, gaussian_sum, thermal_emission
 
     with open(settings_file, 'r') as stream:
         try:
@@ -154,6 +154,7 @@ def read_settings():
             scattering_step_length = float(settings['scattering_step_length'])
             max_distance = float(settings['max_distance'])
             single_scattering = bool(settings['single_scattering'])
+            thermal_emission = bool(settings['thermal_emission'])
             monte_carlo_mode = bool(settings['monte_carlo_mode'])
             optimized_mode = bool(settings['optimized_mode'])
             extinction_threshold = float(settings['extinction_threshold'])
@@ -271,7 +272,8 @@ def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
                    'absorbing_cross_section' : [],
                    'scattering_cross_section' : [],
                    'medium_emissivity' : [],
-                   'extinction' : []}
+                   'extinction' : [],
+                   'thermal_emission' : []}
 
     for current_fun_selection in unique_funs:
         mask = (intp_fun_selection == current_fun_selection)
@@ -295,13 +297,14 @@ def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
                 interp_funs['scattering_cross_section'].append(lambda pos, medium_vals=xsec_sca : interp1d(R, medium_vals, axis=0, kind=interpolator,assume_sorted=True)(base_interp_fun(pos)))
             for i_emi in range(n_emi):
                 interp_funs['emitter'].append(lambda pos, medium_vals=medium['emitter'][mask,i_emi] : interp1d(R, medium_vals, kind=interpolator,assume_sorted=True)(base_interp_fun(pos)))
-                emiss = interpolate_wavelengths(medium['medium_emissivity'][mask,:,:,i_emi], wavelengths_in, wavelengths_out)
+                emiss = interpolate_wavelengths(np.sum(medium['medium_emissivity'][mask,:,:,i_emi],axis=1), wavelengths_in, wavelengths_out)
                 interp_funs['medium_emissivity'].append(lambda pos, medium_vals=emiss : interp1d(R, medium_vals, axis=0, kind=interpolator,assume_sorted=True)(base_interp_fun(pos)))
             if optimized_mode:
                 R_poss = medium['position'][mask]
                 tau_abs = np.zeros((R_poss.shape[0],wavelengths_in.size))
                 tau_sca = np.zeros((R_poss.shape[0],wavelengths_in.size))
-
+                tau_emi = np.zeros((R_poss.shape[0],wavelengths_in.size))
+                
                 for R_idx in range(R_poss.shape[0]):
                     R_pos = R_poss[R_idx]
                     for idx_abs in range(-n_abs,0):
@@ -312,8 +315,20 @@ def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
                         tau_sca[R_idx,:] = tau_sca[R_idx,:] + (
                           interp_funs['scatterer'][idx_sca](R_pos)
                         * interp_funs['scattering_cross_section'][idx_sca](R_pos) )
+                    if thermal_emission:
+                        for idx_emi in range(-n_emi,0):
+                            # not exactly tau_emi, but named such for consistency.
+                            # this is the source function in RTE. Due to Kirchoff's
+                            # law, the emissivity is equal to absorbance. Medium
+                            # emissivity is the Planck's law.
+                            tau_emi[R_idx,:] = tau_emi[R_idx,:] + (
+                              interp_funs['absorber'][idx_emi](R_pos)
+                            * interp_funs['absorbing_cross_section'][idx_emi](R_pos) 
+                            * interp_funs['medium_emissivity'][idx_emi](R_pos))
                 tau_ext = cm_in_km * (tau_abs + tau_sca)
                 interp_funs['extinction'].append(lambda pos, medium_vals=tau_ext : interp1d(R, medium_vals, axis=0, kind=interpolator,copy=False,assume_sorted=True)(base_interp_fun(pos)))
+                if thermal_emission:
+                    interp_funs['thermal_emission'].append(lambda pos, medium_vals=tau_emi : interp1d(R, medium_vals, axis=0, kind=interpolator,copy=False,assume_sorted=True)(base_interp_fun(pos)))
         elif current_fun_selection == 2:
             #2: Interpolation is radially from the medium position.
             #    There's no dependence between different medium positions. The basis
@@ -334,12 +349,13 @@ def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
                 interp_funs['scattering_cross_section'].append(lambda pos, medium_vals=xsec_sca : gauss_fun(pos,medium_pos,medium_std,medium_vals))
             for i_emi in range(n_emi):
                 interp_funs['emitter'].append(lambda pos, medium_vals=medium['emitter'][mask,i_emi] : gauss_fun(pos,medium_pos,medium_std,medium_vals))
-                emiss = interpolate_wavelengths(medium['medium_emissivity'][mask,:,:,i_emi], wavelengths_in, wavelengths_out)
+                emiss = interpolate_wavelengths(np.sum(medium['medium_emissivity'][mask,:,:,i_emi],axis=1), wavelengths_in, wavelengths_out)
                 interp_funs['medium_emissivity'].append(lambda pos, medium_vals=emiss : gauss_fun(pos,medium_pos,medium_std,medium_vals))
             if optimized_mode:
                 R_poss = medium['position'][mask]
                 tau_abs = np.zeros((R_poss.shape[0],wavelengths_in.size))
                 tau_sca = np.zeros((R_poss.shape[0],wavelengths_in.size))
+                tau_emi = np.zeros((R_poss.shape[0],wavelengths_in.size))
 
                 for R_idx in range(R_poss.shape[0]):
                     R_pos = R_poss[R_idx]
@@ -351,9 +367,20 @@ def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
                         tau_sca[R_idx,:] = tau_sca[R_idx,:] + (
                           interp_funs['scatterer'][idx_sca](R_pos)
                         * interp_funs['scattering_cross_section'][idx_sca](R_pos) )
+                    if thermal_emission:
+                        for idx_emi in range(-n_emi,0):
+                            # not exactly tau_emi, but named such for consistency.
+                            # this is the source function in RTE. Due to Kirchoff's
+                            # law, the emissivity is equal to absorbance. Medium
+                            # emissivity is the Planck's law.
+                            tau_emi[R_idx,:] = tau_emi[R_idx,:] + (
+                              interp_funs['absorber'][idx_emi](R_pos)
+                            * interp_funs['absorbing_cross_section'][idx_emi](R_pos) 
+                            * interp_funs['medium_emissivity'][idx_emi](R_pos))
                 tau_ext = cm_in_km * (tau_abs + tau_sca)
                 interp_funs['extinction'].append(lambda pos, medium_vals=tau_ext : gauss_fun(pos,medium_pos,medium_std,medium_vals))
-
+                if thermal_emission:
+                    interp_funs['thermal_emission'].append(lambda pos, medium_vals=tau_emi : interp1d(R, medium_vals, axis=0, kind=interpolator,copy=False,assume_sorted=True)(base_interp_fun(pos)))
         elif current_fun_selection == 3:
             pass
             #nearest neighbour blocks
@@ -1114,6 +1141,14 @@ class Path:
 
         stokes_out = stokes_out.T
         np.multiply(seg0.transmissivity,stokes_out,out=stokes_out)
+        if thermal_emission:
+            therm_emi = np.zeros_like(stokes_out)
+            #photon_position 
+            emission_length = self.scatter_event['scattering_length']
+            n_emi = len(interp_funs['thermal_emission'])
+            for idx_emi in range(n_emi):
+                therm_emi[0,:] += cm_in_km * (emission_length * interp_funs['thermal_emission'][idx_emi](photon_position ))
+            np.add(stokes_out,therm_emi,out=stokes_out)
         if not self.scatter_event['type'] == 'pass-through':
             np.multiply(seg1.transmissivity,stokes_out,out=stokes_out)
         stokes_out = stokes_out.T
@@ -1372,18 +1407,9 @@ def compute_stokes_optimized(geom, interp_funs, sca_funs, refl_funs):
     for seg in main_beam_segments:
         seg.compute_transmissivity(geom,subsegments,main_beam_segments,interp_funs)
         seg.release_subsegments(subsegments)
-    if False:
-        #This is somehow more slow than sequential????
-        import pathos
-        def process_wrapper(seg):
-            seg.compute_transmissivity(geom,subsegments,main_beam_segments,interp_funs)
-            seg.release_subsegments(subsegments)
-        with pathos.multiprocessing.Pool(5) as p:
-            p.map(process_wrapper,scatter_segments)
-    else:
-        for seg in scatter_segments:
-            seg.compute_transmissivity(geom,subsegments,scatter_segments,interp_funs)
-            seg.release_subsegments(subsegments)
+    for seg in scatter_segments:
+        seg.compute_transmissivity(geom,subsegments,scatter_segments,interp_funs)
+        seg.release_subsegments(subsegments)
     for seg in subsegments:
         if not seg.computed:
             print(seg)
