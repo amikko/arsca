@@ -297,7 +297,7 @@ def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
                 interp_funs['scattering_cross_section'].append(lambda pos, medium_vals=xsec_sca : interp1d(R, medium_vals, axis=0, kind=interpolator,assume_sorted=True)(base_interp_fun(pos)))
             for i_emi in range(n_emi):
                 interp_funs['emitter'].append(lambda pos, medium_vals=medium['emitter'][mask,i_emi] : interp1d(R, medium_vals, kind=interpolator,assume_sorted=True)(base_interp_fun(pos)))
-                emiss = interpolate_wavelengths(np.sum(medium['medium_emissivity'][mask,:,:,i_emi],axis=1), wavelengths_in, wavelengths_out)
+                emiss = interpolate_wavelengths(np.sum(medium['medium_emissivity'][mask,:,:,i_emi],axis=2), wavelengths_in, wavelengths_out)
                 interp_funs['medium_emissivity'].append(lambda pos, medium_vals=emiss : interp1d(R, medium_vals, axis=0, kind=interpolator,assume_sorted=True)(base_interp_fun(pos)))
             if optimized_mode:
                 R_poss = medium['position'][mask]
@@ -349,7 +349,7 @@ def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
                 interp_funs['scattering_cross_section'].append(lambda pos, medium_vals=xsec_sca : gauss_fun(pos,medium_pos,medium_std,medium_vals))
             for i_emi in range(n_emi):
                 interp_funs['emitter'].append(lambda pos, medium_vals=medium['emitter'][mask,i_emi] : gauss_fun(pos,medium_pos,medium_std,medium_vals))
-                emiss = interpolate_wavelengths(np.sum(medium['medium_emissivity'][mask,:,:,i_emi],axis=1), wavelengths_in, wavelengths_out)
+                emiss = interpolate_wavelengths(np.sum(medium['medium_emissivity'][mask,:,:,i_emi],axis=2), wavelengths_in, wavelengths_out)
                 interp_funs['medium_emissivity'].append(lambda pos, medium_vals=emiss : gauss_fun(pos,medium_pos,medium_std,medium_vals))
             if optimized_mode:
                 R_poss = medium['position'][mask]
@@ -1141,7 +1141,7 @@ class Path:
 
         stokes_out = stokes_out.T
         np.multiply(seg0.transmissivity,stokes_out,out=stokes_out)
-        if thermal_emission:
+        if thermal_emission and not self.scatter_event['type'] == 'pass-through':
             therm_emi = np.zeros_like(stokes_out)
             #photon_position 
             emission_length = self.scatter_event['scattering_length']
@@ -1297,26 +1297,26 @@ def compute_stokes_optimized(geom, interp_funs, sca_funs, refl_funs):
     step_length = main_beam_step_length
 
     next_position = np.nan * np.ones((3,))
-
-    while not photon_in_domain(photon_position):
-        # TODO: In this part, we should check also the exact crossing point
-        # AND any effect which might come from crossing some certain boundary.
-        next_position = photon_position + step_length * photon_direction
-        distance_travelled = distance_travelled + step_length
-        if distance_travelled > max_distance:
-            #The photon missed the domain completely. Who aimed this ray?!
-            if geom['source_direct_illumination'](photon_direction, photon_position):
-                # if the photon hits the source without passing through the medium
-                return stokes_in
+    if not photon_in_domain(photon_position):
+        while not photon_in_domain(photon_position):
+            # TODO: In this part, we should check also the exact crossing point
+            # AND any effect which might come from crossing some certain boundary.
+            next_position = photon_position + step_length * photon_direction
+            distance_travelled = distance_travelled + step_length
+            if distance_travelled > max_distance:
+                #The photon missed the domain completely. Who aimed this ray?!
+                if geom['source_direct_illumination'](photon_direction, photon_position):
+                    # if the photon hits the source without passing through the medium
+                    return stokes_in
+                else:
+                    return stokes_out
+    
             else:
-                return stokes_out
-
-        else:
-            prev_position = photon_position
-            photon_position = next_position
-
-    b_idx = find_crossed_boundary(geom['boundary'], prev_position, photon_position)
-    photon_position = move_photon_to_boundary(geom['boundary'][b_idx], geom['boundary_normal'][b_idx], prev_position, photon_position)
+                prev_position = photon_position
+                photon_position = next_position
+    
+        b_idx = find_crossed_boundary(geom['boundary'], prev_position, photon_position)
+        photon_position = move_photon_to_boundary(geom['boundary'][b_idx], geom['boundary_normal'][b_idx], prev_position, photon_position)
 
     photon_exiting_domain = False
 
