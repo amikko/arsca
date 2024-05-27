@@ -145,6 +145,8 @@ Unit conventions:
 
 """
 
+#TODO: Add the corresponding up-vector for each of the view vectors?
+
 #TODO: disentangle the n_parameters from the scatterers and surfaces: not both 
 # need to have the same amount of parameters.
 
