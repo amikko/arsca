@@ -408,7 +408,7 @@ module routines
         r = sqrt(x(j)**2.0_sp+y(j)**2.0_sp+z(j)**2.0_sp)
 
         alt_idx = get_nearest_altitude(r)
-
+        !write (*,*) r,alt_idx
         if (alt_idx > atmos_layers) then
           alt_idx = atmos_layers
         !elseif (index == 0 .or. index == 1) then
@@ -454,7 +454,7 @@ module routines
         !kumtn(j) = 1.0_sp - exp(-kumex)
 
         lay = int(r-req) + 1
-
+        !write(*,*) j, startweight(j), tausir, x(j), y(j), z(j)
         pathlayer(j) = lay
 
         call calcrefra(x(j),y(j),z(j),dx(j),dy(j),dz(j),dxnew,dynew,dznew,wlfact)
@@ -462,6 +462,8 @@ module routines
         x(j+1) = x(j) + small_step*(dx(j)+dxnew)/2.0_sp
         y(j+1) = y(j) + small_step*(dy(j)+dynew)/2.0_sp
         z(j+1) = z(j) + small_step*(dz(j)+dznew)/2.0_sp
+
+        !write(*,*) x(j+1),y(j+1),z(j+1)
 
         dx(j+1) = dx(j)
         dy(j+1) = dy(j)
@@ -965,6 +967,9 @@ module routines
            !the same order as in the input. They may also use same kernels,
            !but with different profiles and cross-sections
            phases(sca_idx) = phasef(sca_idx,cosi) * kex(sca_idx)
+           !if (noscat == 1) then
+          !   write (*,*) cosi,phasef(sca_idx,cosi)
+           !end if
          end do
 
 
