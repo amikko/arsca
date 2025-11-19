@@ -104,6 +104,8 @@ def load_siro_result_file(dfilename_in):
             """
         dfilepath = ddirname + dfilename_in + suffix
         radiance_data = np.genfromtxt(dfilepath)
+        if len(radiance_data.shape) == 1:
+            radiance_data = radiance_data.reshape((1,radiance_data.size))
         param_data = np.genfromtxt(dfilepath[:-len(suffix)] + ".param")
         noph = param_data[1]
         geoms = np.unique(radiance_data[:,0])
