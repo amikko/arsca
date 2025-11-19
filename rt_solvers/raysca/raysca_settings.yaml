@@ -1,49 +1,53 @@
 # This is the settings file for RaySca
-# These are the settings, which are more related to the technical 
+# These are the settings, which are more related to the technical
 # implementations of the RT solver, than to the RT problem itself. You might
 # need to change these sometimes, especially if you get funny results.
 
-# If False, then all of the measured radiance is just from the surface 
-# reflections or from direct radiation from the source. If True, then 
+# If False, then all of the measured radiance is just from the surface
+# reflections or from direct radiation from the source. If True, then
 # scattering medium also contributes to the measured radiance.
 # This has no effect if monte_carlo_mode is True.
 single_scattering : False
 
+# If True, then the thermal emission terms are included in the computation.
+thermal_emission : True
+
 # If True, then the simulations are ran using the Monte Carlo methodology.
-# This overrides the single_scattering setting. 
+# This overrides the single_scattering setting.
 monte_carlo_mode : False
 
 # If True, then the simulations are ran using the optimized version of
 # compute_stokes.
 optimized_mode : True
 
-# If True, then more accurate integration is enabled. 
+# If True, then more accurate integration is enabled.
 super_accurate : False
 
 # What interpolation mode is used in medium interpolation
 # The arguments are inputs to SciPy's interp1d in a 1D atmosphere
 # Tested values are: 'nearest', 'linear'
-# 'nearest' is the fastest, but it might 
+# 'nearest' is the fastest, but it might
 interpolator : 'linear'
 
 # This is the step length in kilometers along the line-of-sight with which the
-# integration is done. Generally this should be smaller than the smallest 
+# integration is done. Generally this should be smaller than the smallest
 # features of the medium you want to simulate.
-main_beam_step_length : 0.2
-#main_beam_step_length : 0.4
+#main_beam_step_length : 0.25
+main_beam_step_length : 1.0
 
 # This is the step length in kilometers along the scattered path with which the
-# integration is done. Generally this should be smaller than the smallest 
+# integration is done. Generally this should be smaller than the smallest
 # features of the medium you want to simulate.
-scattering_step_length : 1.5
+#scattering_step_length : 1.0
+scattering_step_length : 1.0
 
-# If True, then the gaussian base functions are summed together instead of 
+# If True, then the gaussian base functions are summed together instead of
 # just evaluating the nearest neighbour, which is the case if gaussian_sum is
 # False.
 gaussian_sum : False
 
 # If True, raysca will generate the cartesian product of the lines of sight and
-# the sources to be computed. If False, then there should be same number of 
+# the sources to be computed. If False, then there should be same number of
 # sources and lines of sights defined and the radiances are computed
 # pair-by-pair.
 source_los_cartesian_product : True
@@ -52,11 +56,11 @@ source_los_cartesian_product : True
 # eliminated. Effectively this defines the accuracy limit of the simulation.
 extinction_threshold : 1e-10
 
-# This is the maximum distance a ray is traced outside the domain, checking if 
+# This is the maximum distance a ray is traced outside the domain, checking if
 # it'll hit the domain at some point. This should depend on your geometry.
 max_distance : 1e6
 
-# If set to True, all the wavelengths are simulated along one line-of-sight 
+# If set to True, all the wavelengths are simulated along one line-of-sight
 # trace. If you have some situations, where there's no wavelength dependence
 # on radiation propagation (such as varying refractive indices), then this'll
 # speed up the computation considerably.
@@ -65,7 +69,7 @@ single_trace_for_all_wl : True
 # If set to True, then the computation will be parallelized. If False, then
 # only a single thread will be used. If you don't have the pathos module, then
 # this needs to be False.
-parallelization : True
+parallelization : False
 
 # If non-zero, then the amount of parallel processes is limited to this number
 # or to the amount of available CPUs, whichever is smaller. If zero, then all
@@ -79,11 +83,11 @@ show_progress : True
 # This file defines the aerosol phase matrix file used
 #aerosol_file : aer_SCO2.dat
 #aerosol_file : aer_WCO2.dat
-aerosol_file : aer_O2A.dat
+aerosol_file : 
 #aerosol_file : aer_ALTIUS_ind11.dat
 
 # This file defines the surface BRDF phase matrix
-brdf_file : greenland_snow6.nc4
+brdf_file : reflectance_secunda_09092022.nc4
 
 # Is the output going to be in IQUV Stokes basis, or IIUV Stokes basis
 # Accepted values: IQUV, IIUV
