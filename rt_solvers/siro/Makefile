@@ -17,7 +17,7 @@ COPTIONS = -c -O3 -fbounds-check -mtune=native -W -Wall -pedantic -Wconversion -
 EXECUTABLE = siro
 
 ${EXECUTABLE} : ${OBJECTS}
-	${COMPILE} -o ${EXECUTABLE} ${OBJECTS} -I/usr/local/include -I/usr/include -L/usr/local/lib -L/usr/lib -lnetcdff -fopenmp
+	${COMPILE} -o ${EXECUTABLE} ${OBJECTS} -I/usr/local/include -I/usr/include -L/usr/local/lib -L/usr/lib -lnetcdff #-fopenmp
 
 parameters.o : parameters.f90
 	${COMPILE} ${COPTIONS} parameters.f90 
