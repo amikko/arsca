@@ -10,7 +10,7 @@
 single_scattering : False
 
 # If True, then the thermal emission terms are included in the computation.
-thermal_emission : True
+thermal_emission : False
 
 # If True, then the simulations are ran using the Monte Carlo methodology.
 # This overrides the single_scattering setting.
