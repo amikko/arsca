@@ -12,7 +12,7 @@ Siro should be compilable with a simple `make` call.
 
 Siro requires `netcdf` (TODO: check version number) and it should be installed beforehand.
 
-Installation can be easily done on Ubuntu with the command `sudo apt install libnetcdf-dev`
+Installation can be easily done on Ubuntu with the command `sudo apt install libnetcdff-dev`
 
 ## Usage
 In principle, Siro is ran with the following command: `./siro <input file name> <output file name>`
