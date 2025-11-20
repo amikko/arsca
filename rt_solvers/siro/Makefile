@@ -12,7 +12,7 @@ OBJECTS =   parameters.o \
 
 COMPILE = gfortran
 
-COPTIONS = -c -O3 -fbounds-check -mtune=native -W -Wall -pedantic -Wconversion -I/usr/local/include -I/usr/include -L/usr/local/lib -L/usr/lib -lnetcdff -L/lib -lnetcdf -lnetcdf -ldl -lm -fopenmp
+COPTIONS = -c -O3 -fbounds-check -mtune=native -W -Wall -pedantic -Wconversion -I/usr/local/include -I/usr/include -L/usr/local/lib -L/usr/lib -lnetcdff -L/lib -lnetcdf -lnetcdf -ldl -lm #-fopenmp
 
 EXECUTABLE = siro
 
