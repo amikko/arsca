@@ -326,9 +326,9 @@ def set_up_interpolation(medium, wavelengths_in, wavelengths_out):
                             * interp_funs['absorbing_cross_section'][idx_emi](R_pos) 
                             * interp_funs['medium_emissivity'][idx_emi](R_pos))
                 tau_ext = cm_in_km * (tau_abs + tau_sca)
-                interp_funs['extinction'].append(lambda pos, medium_vals=tau_ext : interp1d(R, medium_vals, axis=0, kind=interpolator,copy=False,assume_sorted=True)(base_interp_fun(pos)))
+                interp_funs['extinction'].append(lambda pos, medium_vals=tau_ext : interp1d(R, medium_vals, axis=0, kind=interpolator,copy=False,assume_sorted=True,fill_value='extrapolate')(base_interp_fun(pos)))
                 if thermal_emission:
-                    interp_funs['thermal_emission'].append(lambda pos, medium_vals=tau_emi : interp1d(R, medium_vals, axis=0, kind=interpolator,copy=False,assume_sorted=True)(base_interp_fun(pos)))
+                    interp_funs['thermal_emission'].append(lambda pos, medium_vals=tau_emi : interp1d(R, medium_vals, axis=0, kind=interpolator,copy=False,assume_sorted=True,fill_value='extrapolate')(base_interp_fun(pos)))
         elif current_fun_selection == 2:
             #2: Interpolation is radially from the medium position.
             #    There's no dependence between different medium positions. The basis
