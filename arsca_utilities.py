@@ -42,7 +42,7 @@ def cartesian_product(*arrays):
 
 def linear_to_multi_idx(idx,shape):
     #shape is a tuple with the matrix's dimensions
-    mult_idx = [np.NaN] * len(shape)
+    mult_idx = [np.nan] * len(shape)
     for dim_idx in range(len(shape)):
         dim_prod = int(np.prod(shape[(dim_idx+1):]))
         if idx // dim_prod > 0:
