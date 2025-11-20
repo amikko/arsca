@@ -19,7 +19,7 @@ import os
 img_sizes = [10,20,50,100,2,5,30,40]
 anim_vzas = np.linspace(-80,80,33)
 #anim_vzas = [-0.5]
-i_img = -1
+i_img = 0
 i_vza = 16
 
 if True:
