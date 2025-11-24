@@ -197,7 +197,7 @@ program siro
     call nc_get_brdf(brf_zen_in,brf_wavelengths,brf_zen_out,brf_azi_out,brf_M)
     call brdf_setup(brf_M,brf_zen_out,brf_cdf_zen_out,brf_cdf_azi_out)
     write(*,*) 'No polarization effects of the surface are taken into account due to unverified implementation'
-    !This requires changes in polaris functions and routines where you sample from BRDF. 
+    !This requires changes in polaris functions and routines where you sample from BRDF.
     !write(*,*) 'Uncomment the polaris call around line number 420 to enable it.'
   end if
 
@@ -276,7 +276,11 @@ program siro
         wl_sca_xsec = sca_xsec(:,n,:)
         wl_abs_xsec = abs_xsec(:,n,:)
 
-        if (modulo(n,wl_progress_counter) == 0) then
+        if (nosirowl >= 10) then
+          if (modulo(n,wl_progress_counter) == 0) then
+            write(*,*) n,' out of ', nosirowl, ' wavelengths done'
+          end if
+        else
           write(*,*) n,' out of ', nosirowl, ' wavelengths done'
         end if
         wlfact = wlfactor(n)
