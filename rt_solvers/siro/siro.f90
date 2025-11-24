@@ -242,9 +242,9 @@ program siro
 
   do m = 1,nosiroalt ! through altitudes
      altitudes(m) = m
-     sunx = solar_dir(m,1)
-     suny = solar_dir(m,2)
-     sunz = solar_dir(m,3)
+     sunx = solar_dir(1,1)
+     suny = solar_dir(1,2)
+     sunz = solar_dir(1,3)
 
      satx = sat_position(m,1)
      saty = sat_position(m,2)
