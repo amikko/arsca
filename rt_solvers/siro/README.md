@@ -14,6 +14,8 @@ Siro requires `netcdf` (TODO: check version number) and it should be installed b
 
 Installation can be easily done on Ubuntu with the command `sudo apt install libnetcdff-dev`
 
+NOTE: By default, Siro compiles with OpenMP multithreading, which boosts the computation enormously. However, it may cause memory segmentation faults if the stack size is too small. To enlarge the stack size sufficiently on Linux systems, just type `ulimit -sS 32000` before running Siro. If multithreading causes other problems, it may be disabled by commenting the `-fopenmp` options away from the Makefile, and running `make clean` and `make` after that to recompile Siro to use single computation thread.
+
 ## Usage
 In principle, Siro is ran with the following command: `./siro <input file name> <output file name>`
 
