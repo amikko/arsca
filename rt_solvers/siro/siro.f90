@@ -257,8 +257,11 @@ program siro
      ind = 1
 
      write(*,*) ' '
-     write(*,'(2x,a6,1x,i2,1x,a1,1x,i2,2x,a15,f5.1,1x,a2,1x,a13,f5.1,a2)') 'Layer:', m, '/',nosiroalt,'Tangent height:', &
-          tanheight, 'km', 'Temperature: ', 0.0_sp,' K'
+     !write(*,'(2x,a6,1x,i2,1x,a1,1x,i2,2x,a15,f5.1,1x,a2,1x,a13,f5.1,a2)') 'Layer:', m, '/',nosiroalt,'Tangent height:', &
+      !    tanheight, 'km', 'Temperature: ', 0.0_sp,' K'
+     write(*,*) ' Geometry ', m,'/',nosiroalt,': '
+     write(*,*) ' sat_position (',satx,saty,satz,'),'
+     write(*,*) ' view_vec (',detx,dety,detz,')'
      write(*,*) ' '
 
      wl_progress_counter = nosirowl / 10
