@@ -13,7 +13,7 @@ module polarisation
   ! depolarisation of dry air, Young 1980
   ! parameter(depol=0.0279)
   ! for limb model comparisons depol=0
-  real(kind=sp), parameter :: depol = 0.0_sp
+  real(kind=sp), parameter :: depol = 0.03_sp
 
 
 
