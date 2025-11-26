@@ -43,6 +43,18 @@ if casesel == 'd1':
                 'albedo' : 0.0,
                 'n_lay' : 1,                
                 'rayleigh_depol' : 0.03} # currently hardcoded into Siro
+elif casesel == 'd2':
+    # single layer Rayleigh + albedo
+    settings = {'n_sca' : 1,
+                'n_abs' : 1,
+                'tau_sca' : 0.1,
+                'wavelength' : 450,
+                'albedo' : 0.3,
+                'n_lay' : 1,                
+                'rayleigh_depol' : 0.03}
+
+elif casesel == 'd3':
+    siro_custom_settings['AER_FILENAME'] = "'input/miefiles/%s'"
 elif casesel == 'e1':
     alttau = np.genfromtxt('datafiles/atmos/tau_rayleigh_450nm_usstd.dat',comments='#')
     # nasty little layerses...
@@ -59,10 +71,7 @@ elif casesel == 'e1':
                 'n_abs' : 1, 
                 'alttau' : alttau,
                 'wavelength' : 450,
-                'albedo' : 0.0}
-elif casesel == 'd3':
-    siro_custom_settings['AER_FILENAME'] = "'input/miefiles/%s'"
-    
+                'albedo' : 0.0}    
 else:
     print('bad case selection: %s' % casesel)
     halt
@@ -122,9 +131,9 @@ for idx_sza in range(len(szas)):
     medium['scatterer'] = np.zeros((n_medium_positions,n_scatterer))
     medium['scattering_cross_section'] = np.zeros((n_medium_positions,n_wl,n_scatterer))
     
-    if casesel == 'd1':
-        # single layer Rayleigh
-        
+    if casesel == 'd1' or casesel == 'd2':
+        # d1 : single layer Rayleigh
+        # d2 : single layer Rayleigh + albedo
         medium['scatterer'][:,0] = 1.0 
         medium['scattering_cross_section'] = tau_to_xsec(settings['tau_sca'],atmos_thickness)
         
