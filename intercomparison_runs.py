@@ -56,7 +56,7 @@ elif casesel == 'e1':
     alttau[-1,1] = alttau[-2,1]
     alttau = alttau[1:,:]
     settings = {'n_sca' : 1,
-                'n_abs' : 1, # needs to be one, but filled with zeroes
+                'n_abs' : 1, 
                 'alttau' : alttau,
                 'wavelength' : 450,
                 'albedo' : 0.0}
@@ -140,11 +140,17 @@ for idx_sza in range(len(szas)):
         alttau = settings['alttau']
         medium['scatterer'][:,0] = 1.0 
         thicknesses = np.diff(alttau[::2,0])
-        for i in range(0,99,2):
+        for i in range(0,98,2):
             thick_idx = i//2
             medium['scattering_cross_section'][i,0,0] = tau_to_xsec(alttau[i,1],thicknesses[thick_idx])
             medium['scattering_cross_section'][i+1,0,0] = medium['scattering_cross_section'][i,0,0]
-    halt
+        medium['scattering_cross_section'][-1,0,0] = medium['scattering_cross_section'][-2,0,0]
+        
+        medium['scatterer_kernel'] = np.zeros((n_scatterer,))
+        medium['scatterer_kernel_parameter'] = np.ones((1,n_scatterer))# * settings['rayleigh_depol']
+        medium['absorber'] = np.zeros((n_medium_positions,n_absorber))
+        medium['absorbing_cross_section'] = np.zeros((n_medium_positions,n_wl,n_absorber))
+    
     #emitters and emissivities
     medium['emitter'] = np.zeros((n_medium_positions,n_emitter))
     medium['medium_emissivity'] = np.zeros((n_medium_positions,n_wl,4,n_emitter))
