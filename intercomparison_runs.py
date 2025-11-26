@@ -103,7 +103,7 @@ for idx_sza in range(len(szas)):
     wl = np.array([settings['wavelength']])
     
     n_wl = n_wn
-    if casesel == 'd1':
+    if casesel == 'd1' or casesel == 'd2':
         n_lev = settings['n_lay'] + 1
         altitudes = np.linspace(0,atmos_thickness,n_lev)
     elif casesel == 'e1':
