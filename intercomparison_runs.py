@@ -34,6 +34,20 @@ siro_custom_settings = {
     'ratm' : R_earth + atmos_thickness,
     'step' : step_siro}
 
+
+def homogenous_layers(alttau):
+    # nasty little layerses...
+    # internally Siro linearly interpolates between levels, so more than one homogenous
+    # layer is a pain to set up, but let's do it
+    smaller_alts = alttau.copy()
+    smaller_alts[:,0] = smaller_alts[:,0] - 1e-4 # 10 cm lower
+    new_alttau = np.concatenate((alttau,smaller_alts))
+    alttau = new_alttau[new_alttau[:,0].argsort()]
+    alttau[:,1] = np.roll(alttau[:,1],1)
+    alttau[-1,1] = alttau[-2,1]
+    alttau = alttau[1:,:]
+    return alttau
+
 if casesel == 'd1':
     # single layer Rayleigh
     settings = {'n_sca' : 1,
@@ -57,21 +71,22 @@ elif casesel == 'd3':
     siro_custom_settings['AER_FILENAME'] = "'input/miefiles/%s'"
 elif casesel == 'e1':
     alttau = np.genfromtxt('datafiles/atmos/tau_rayleigh_450nm_usstd.dat',comments='#')
-    # nasty little layerses...
-    # internally Siro linearly interpolates between levels, so more than one homogenous
-    # layer is a pain to set up, but let's do it
-    smaller_alts = alttau.copy()
-    smaller_alts[:,0] = smaller_alts[:,0] - 1e-4 # 10 cm lower
-    new_alttau = np.concatenate((alttau,smaller_alts))
-    alttau = new_alttau[new_alttau[:,0].argsort()]
-    alttau[:,1] = np.roll(alttau[:,1],1)
-    alttau[-1,1] = alttau[-2,1]
-    alttau = alttau[1:,:]
     settings = {'n_sca' : 1,
                 'n_abs' : 1, 
-                'alttau' : alttau,
+                'alttau' : homogenous_layers(alttau),
                 'wavelength' : 450,
                 'albedo' : 0.0}    
+elif casesel == 'e2':
+    alttausca = np.genfromtxt('datafiles/atmos/tau_rayleigh_320nm_usstd.dat',comments='#')
+    alttauabs = np.genfromtxt('datafiles/atmos/tau_absorption_320nm_usstd.dat',comments='#')
+   
+    settings = {'n_sca' : 1,
+                'n_abs' : 1, 
+                'alttausca' : homogenous_layers(alttausca),
+                'alttauabs' : homogenous_layers(alttauabs),
+                'wavelength' : 320,
+                'albedo' : 0.0}    
+    
 else:
     print('bad case selection: %s' % casesel)
     halt
@@ -90,6 +105,7 @@ def tau_to_xsec(tau,thickness):
     # assuming the number density to be 1/cm3
     return tau / thickness / 1e5
     
+
 for idx_sza in range(len(szas)):
     #for idx_sza in [0]:    
     compute_siro = True
@@ -108,7 +124,8 @@ for idx_sza in range(len(szas)):
         altitudes = np.linspace(0,atmos_thickness,n_lev)
     elif casesel == 'e1':
         altitudes = settings['alttau'][:,0]
-    
+    elif casesel == 'e2':
+        altitudes = settings['alttausca'][:,0]
     n_medium_positions = altitudes.size
     n_coordinate = 3
     
@@ -131,6 +148,8 @@ for idx_sza in range(len(szas)):
     medium['scatterer'] = np.zeros((n_medium_positions,n_scatterer))
     medium['scattering_cross_section'] = np.zeros((n_medium_positions,n_wl,n_scatterer))
     
+    medium['absorber'] = np.zeros((n_medium_positions,n_absorber))
+    medium['absorbing_cross_section'] = np.zeros((n_medium_positions,n_wl,n_absorber))
     if casesel == 'd1' or casesel == 'd2':
         # d1 : single layer Rayleigh
         # d2 : single layer Rayleigh + albedo
@@ -140,8 +159,6 @@ for idx_sza in range(len(szas)):
         # zero stands for rayleigh-scattering
         medium['scatterer_kernel'] = np.zeros((n_scatterer,))
         medium['scatterer_kernel_parameter'] = np.ones((1,n_scatterer)) * settings['rayleigh_depol']
-        medium['absorber'] = np.zeros((n_medium_positions,n_absorber))
-        medium['absorbing_cross_section'] = np.zeros((n_medium_positions,n_wl,n_absorber))
         
     elif casesel == 'd3':
         medium['scatterer_kernel'][1] = 1 # this is to use the aerosols
@@ -157,9 +174,23 @@ for idx_sza in range(len(szas)):
         
         medium['scatterer_kernel'] = np.zeros((n_scatterer,))
         medium['scatterer_kernel_parameter'] = np.ones((1,n_scatterer))# * settings['rayleigh_depol']
-        medium['absorber'] = np.zeros((n_medium_positions,n_absorber))
-        medium['absorbing_cross_section'] = np.zeros((n_medium_positions,n_wl,n_absorber))
-    
+    elif casesel == 'e2':
+        alttausca = settings['alttausca']
+        alttauabs = settings['alttauabs']
+        medium['scatterer'][:,0] = 1.0
+        medium['absorber'][:,0] = 1.0
+        thicknesses = np.diff(alttausca[::2,0])
+        for i in range(0,98,2):
+            thick_idx = i//2
+            medium['scattering_cross_section'][i,0,0] = tau_to_xsec(alttausca[i,1],thicknesses[thick_idx])
+            medium['scattering_cross_section'][i+1,0,0] = medium['scattering_cross_section'][i,0,0]
+            medium['absorbing_cross_section'][i,0,0] = tau_to_xsec(alttauabs[i,1],thicknesses[thick_idx])
+            medium['absorbing_cross_section'][i+1,0,0] = medium['absorbing_cross_section'][i,0,0]
+        medium['scattering_cross_section'][-1,0,0] = medium['scattering_cross_section'][-2,0,0]
+        medium['absorbing_cross_section'][-1,0,0] = medium['absorbing_cross_section'][-2,0,0]    
+        medium['scatterer_kernel'] = np.zeros((n_scatterer,))
+        medium['scatterer_kernel_parameter'] = np.ones((1,n_scatterer))# * settings['rayleigh_depol']
+        
     #emitters and emissivities
     medium['emitter'] = np.zeros((n_medium_positions,n_emitter))
     medium['medium_emissivity'] = np.zeros((n_medium_positions,n_wl,4,n_emitter))
@@ -245,3 +276,4 @@ for idx_sza in range(len(szas)):
 
     stokes = radiance_siro_sum.reshape((len(salts),1,len(vzas),len(vaas),4))
     save_results_to_nc(casesel, idx_sza, stokes)
+    
