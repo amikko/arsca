@@ -20,6 +20,7 @@ step_siro = 1.0
 casesel = sys.argv[1]
 noph_siro = int(sys.argv[2])
 #casesel = 'd1'
+#noph_siro = 1000
 
 vzas = [0, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 90]
 vaas = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
@@ -217,12 +218,14 @@ for idx_sza in range(len(szas)):
     x_ax = np.array([1.0, 0.0, 0.0])
     nadir = np.array([-1.0,0.0,0.0])
     idx = 0
+    vza_list = []
+    vaa_list = []
     if casesel != 'e6':
         sza = szas[idx_sza]
         saa = saas[0]
-        solar_dir = arsca.tf.solar_direction(x_ax,y_ax,sza,saa)
-        
-        
+        # note: the minus sign in the y_ax on the following line redefines the polarization directions
+        # to match MYSTIC.
+        solar_dir = arsca.tf.solar_direction(x_ax,-y_ax,sza,saa)
         for idx_salt, sensor_alt in enumerate(salts):
             sat_pos = np.array([sensor_alt + R_earth, 0.0, 0.0])
             if sensor_alt > 60: # the top of atmosphere case
@@ -238,6 +241,8 @@ for idx_sza in range(len(szas)):
                     #print(vza,vaa,sensor_alt,view_vec_zenazi) #ok!
                     instrument['position'][idx,:] = sat_pos
                     instrument['view_vector'][idx,:] = view_vec_zenazi
+                    vza_list.append(vza)
+                    vaa_list.append(vaa)
                     idx += 1
     # BOUNDARY DEFINITIONS
     boundary = {}
