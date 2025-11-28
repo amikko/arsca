@@ -22,7 +22,6 @@ noph_siro = int(sys.argv[2])
 vzas = [0, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 90]
 vaas = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
 szas = [30, 60, 80, 87, 90, 93, 96, 99]
-szas = [30]
 saas = [0]
 salts= [0 + 1e-4, 120 - 1e-4] # sensor altitude, kilometres
 atmos_thickness = 120
@@ -152,7 +151,6 @@ def aerosol_phase_matrix_file_generation():
         rows = arr.shape[0]
         muller_data = np.zeros((rows,17))
         for r in range(rows):
-            print(np.cos(arr[r,0] * np.pi / 180.0))
             muller_data[r,0] = np.cos(arr[r,0] * np.pi / 180.0)
             for j in range(16):
                 if schemes[i][j] != 0:
