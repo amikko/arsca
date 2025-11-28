@@ -9,22 +9,20 @@ Created on Fri May 22 15:35:11 2020
 import sys
 import numpy as np
 import netCDF4
-from scipy.interpolate import interp1d
-import scipy.optimize
 import arsca
-import pickle
 
 step_siro = 1.0
 #noph_siro = 100
 
 casesel = sys.argv[1]
 noph_siro = int(sys.argv[2])
-#casesel = 'd1'
+#casesel = 'd5'
 #noph_siro = 1000
 
 vzas = [0, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 90]
 vaas = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
 szas = [30, 60, 80, 87, 90, 93, 96, 99]
+szas = [30]
 saas = [0]
 salts= [0 + 1e-4, 120 - 1e-4] # sensor altitude, kilometres
 atmos_thickness = 120
@@ -69,7 +67,32 @@ elif casesel == 'd2':
                 'rayleigh_depol' : 0.03}
 
 elif casesel == 'd3':
-    siro_custom_settings['AER_FILENAME'] = "'input/miefiles/%s'"
+    siro_custom_settings['AER_FILENAME'] = "'input/miefiles/ws_sphere_500nm.dat'"
+    settings = {'n_sca' : 1,
+                'n_abs' : 1,
+                'tau_sca' : 0.2,
+                'ssa' : 0.975683,
+                'wavelength' : 500,
+                'albedo' : 0.0,
+                'n_lay' : 1}
+elif casesel == 'd4':
+    siro_custom_settings['AER_FILENAME'] = "'input/miefiles/spheroid_350nm.dat'"
+    settings = {'n_sca' : 1,
+                'n_abs' : 1,
+                'tau_sca' : 0.2,
+                'ssa' : 0.787581,
+                'wavelength' : 350,
+                'albedo' : 0.0,
+                'n_lay' : 1}
+elif casesel == 'd5':
+    siro_custom_settings['AER_FILENAME'] = "'input/miefiles/water10mic_800nm.dat'"
+    settings = {'n_sca' : 1,
+                'n_abs' : 1,
+                'tau_sca' : 5.0,
+                'ssa' : 0.999979,
+                'wavelength' : 800,
+                'albedo' : 0.0,
+                'n_lay' : 1}    
 elif casesel == 'e1':
     alttau = np.genfromtxt('datafiles/atmos/tau_rayleigh_450nm_usstd.dat',comments='#')
     settings = {'n_sca' : 1,
@@ -106,7 +129,38 @@ def tau_to_xsec(tau,thickness):
     # assuming the number density to be 1/cm3
     return tau / thickness / 1e5
     
-
+def aerosol_phase_matrix_file_generation():
+    infiles = ['./datafiles/mie_results/waso.mie.dat',
+               './datafiles/mie_results/sizedistr_spheroid.dat',
+               './datafiles/mie_results/watercloud.mie.dat']
+    outfiles = ['./rt_solvers/siro/input/miefiles/ws_sphere_500nm.dat',
+                './rt_solvers/siro/input/miefiles/spheroid_350nm.dat',
+                './rt_solvers/siro/input/miefiles/water10mic_800nm.dat']
+    schemes = [[1,2,0,0,2,1,0,0,0,0,3,4,0,0,-4,3],
+               [1,2,0,0,2,5,0,0,0,0,3,4,0,0,-4,6],
+               [1,2,0,0,2,1,0,0,0,0,3,4,0,0,-4,3]]
+    IIUV2IQUV = np.array([[1.0, 1.0, 0.0, 0.0],
+                          [1.0,-1.0, 0.0, 0.0],
+                          [0.0, 0.0, 1.0, 0.0],
+                          [0.0, 0.0, 0.0, 1.0]])
+    # Siro uses IIUV-basis internally for the polarized RT calculations
+    IQUV2IIUV = np.linalg.inv(IIUV2IQUV)
+    for i in range(3):
+        infile = infiles[i]
+        arr = np.genfromtxt(infile,comments='#')
+        arr = arr.T
+        rows = arr.shape[0]
+        muller_data = np.zeros((rows,17))
+        for r in range(rows):
+            print(np.cos(arr[r,0] * np.pi / 180.0))
+            muller_data[r,0] = np.cos(arr[r,0] * np.pi / 180.0)
+            for j in range(16):
+                if schemes[i][j] != 0:
+                    muller_data[r,j+1] = arr[r,schemes[i][j]] if schemes[i][j] > 0 else -arr[r,-schemes[i][j]]
+            muller_data[r,1:] = (IQUV2IIUV @ muller_data[r,1:].reshape((4,4)) @ IQUV2IIUV).ravel()
+        np.savetxt(outfiles[i],muller_data)
+            
+aerosol_phase_matrix_file_generation()
 for idx_sza in range(len(szas)):
     #for idx_sza in [0]:    
     compute_siro = True
@@ -120,7 +174,7 @@ for idx_sza in range(len(szas)):
     wl = np.array([settings['wavelength']])
     
     n_wl = n_wn
-    if casesel == 'd1' or casesel == 'd2':
+    if casesel in ['d1', 'd2', 'd3', 'd4', 'd5']:
         n_lev = settings['n_lay'] + 1
         altitudes = np.linspace(0,atmos_thickness,n_lev)
     elif casesel == 'e1':
@@ -161,8 +215,14 @@ for idx_sza in range(len(szas)):
         medium['scatterer_kernel'] = np.zeros((n_scatterer,))
         medium['scatterer_kernel_parameter'] = np.ones((1,n_scatterer)) * settings['rayleigh_depol']
         
-    elif casesel == 'd3':
-        medium['scatterer_kernel'][1] = 1 # this is to use the aerosols
+    elif casesel in ['d3', 'd4', 'd5']:
+        medium['scatterer_kernel'] = np.ones((n_scatterer,)) # this is to use the aerosols
+        medium['scatterer'][:,0] = 1.0 
+        medium['scattering_cross_section'] = tau_to_xsec(settings['tau_sca'] * settings['ssa'],atmos_thickness)
+        medium['scatterer_kernel_parameter'] = np.zeros((1,n_scatterer))
+        medium['absorber'][:,0] = 1.0
+        medium['absorbing_cross_section'] = tau_to_xsec(settings['tau_sca'] * (1-settings['ssa']),atmos_thickness)
+        
     elif casesel == 'e1':
         alttau = settings['alttau']
         medium['scatterer'][:,0] = 1.0 
