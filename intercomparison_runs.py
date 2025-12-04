@@ -14,14 +14,15 @@ import arsca
 step_siro = 1.0
 #noph_siro = 100
 
-casesel = sys.argv[1]
-noph_siro = int(sys.argv[2])
-#casesel = 'd5'
-#noph_siro = 1000
+#casesel = sys.argv[1]
+#noph_siro = int(sys.argv[2])
+casesel = 'd6'
+noph_siro = 1000
 
 vzas = [0, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 90]
 vaas = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
 szas = [30, 60, 80, 87, 90, 93, 96, 99]
+#szas = [30]
 saas = [0]
 salts= [0 + 1e-4, 120 - 1e-4] # sensor altitude, kilometres
 atmos_thickness = 120
@@ -91,7 +92,18 @@ elif casesel == 'd5':
                 'ssa' : 0.999979,
                 'wavelength' : 800,
                 'albedo' : 0.0,
-                'n_lay' : 1}    
+                'n_lay' : 1}
+elif casesel == 'd6':
+    # single layer Rayleigh + albedo
+    siro_custom_settings['BRF_FILENAME'] = "'input/brdf/mischenko_ocean_2ms.nc4'"
+    siro_custom_settings['brdf_reflection'] = True
+    settings = {'n_sca' : 1,
+                'n_abs' : 1,
+                'tau_sca' : 0.1,
+                'wavelength' : 477,
+                'albedo' : 0.3,
+                'n_lay' : 1,
+                'rayleigh_depol' : 0.03}
 elif casesel == 'e1':
     alttau = np.genfromtxt('datafiles/atmos/tau_rayleigh_450nm_usstd.dat',comments='#')
     settings = {'n_sca' : 1,
@@ -172,7 +184,7 @@ for idx_sza in range(len(szas)):
     wl = np.array([settings['wavelength']])
     
     n_wl = n_wn
-    if casesel in ['d1', 'd2', 'd3', 'd4', 'd5']:
+    if casesel in ['d1', 'd2', 'd3', 'd4', 'd5', 'd6']:
         n_lev = settings['n_lay'] + 1
         altitudes = np.linspace(0,atmos_thickness,n_lev)
     elif casesel == 'e1':
@@ -203,9 +215,10 @@ for idx_sza in range(len(szas)):
     
     medium['absorber'] = np.zeros((n_medium_positions,n_absorber))
     medium['absorbing_cross_section'] = np.zeros((n_medium_positions,n_wl,n_absorber))
-    if casesel == 'd1' or casesel == 'd2':
+    if casesel == 'd1' or casesel == 'd2' or casesel == 'd6':
         # d1 : single layer Rayleigh
         # d2 : single layer Rayleigh + albedo
+        # d6 : single layer Rayleigh + sea surface
         medium['scatterer'][:,0] = 1.0 
         medium['scattering_cross_section'] = tau_to_xsec(settings['tau_sca'],atmos_thickness)
         
