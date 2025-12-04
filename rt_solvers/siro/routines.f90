@@ -1851,8 +1851,11 @@ module routines
       if (dotp < -1.0_sp) then
         ! This might happen in weird situations.
         dotp =  -1.0_sp
+      else if (dotp > 1.0_sp) then
+        dotp =  1.0_sp
       end if
       dotp2 = cpx * flat_x + cpy * flat_y + cpz * flat_z
+      !write(*,*) dotp
       if (dotp2 > 0) then
         azi_out = acos(dotp)
       else

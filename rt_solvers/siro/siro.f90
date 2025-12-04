@@ -263,6 +263,7 @@ program siro
      write(*,*) ' Geometry ', m,'/',nosiroalt,': '
      write(*,*) ' sat_position (',satx,saty,satz,'),'
      write(*,*) ' view_vec (',detx,dety,detz,')'
+     write(*,*) ' solar_dir (',sunx,suny,sunz,')'
      write(*,*) ' '
 
      wl_progress_counter = nosirowl / 10
