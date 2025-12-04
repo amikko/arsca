@@ -187,16 +187,17 @@ program siro
   call nc_read_waves(wl,wlfactor,incident_stokes,source_angular_radius) ! read wavelenghts
   !write(*,*) 'ran nc_read_Waves'
   call create_layering(atmosalt)
-
+  write (*,*) atmosalt
   ! create atmosphere profiles: temperature, pressure, scatterers, absorbers and their cross-sections
   call nc_create_atmosphere(atmosalt, sca_prof, abs_prof, pres_prof, temp_prof, &
                   sca_xsec, abs_xsec)
 
+  !write(*,*) sca_prof, abs_prof, sca_xsec, abs_xsec
 
   if (brdf_reflection) then
     call nc_get_brdf(brf_zen_in,brf_wavelengths,brf_zen_out,brf_azi_out,brf_M)
     call brdf_setup(brf_M,brf_zen_out,brf_cdf_zen_out,brf_cdf_azi_out)
-    write(*,*) 'No polarization effects of the surface are taken into account due to unverified implementation'
+    !write(*,*) 'No polarization effects of the surface are taken into account due to unverified implementation'
     !This requires changes in polaris functions and routines where you sample from BRDF.
     !write(*,*) 'Uncomment the polaris call around line number 420 to enable it.'
   end if
@@ -429,7 +430,8 @@ program siro
                        ! calculate polarization, but only if the surface is non-Lambertian!
                        ! NOTE by Antti on 21.4.2022: We'll just have a nonpolarizing surface now so we don't have to update the
                        ! cumulative polarization matrix.
-                       !call polaris(dirx,diry,dirz,diroldx,diroldy,diroldz,costeta,cosalpha,sinalpha,10,cummatrix)
+                       ! NOTE by A. on 4.12.2025: polaris now enabled for polarized calculations
+                       call polaris(dirx,diry,dirz,diroldx,diroldy,diroldz,costeta,cosalpha,sinalpha,9,cummatrix)
                     end if
                  end if
 

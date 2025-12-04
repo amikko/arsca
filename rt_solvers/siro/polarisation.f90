@@ -230,7 +230,12 @@ contains
 
        matrix = 1/(2*pi)*tempmat
 
-
+    elseif (process == 9) then
+       ! Reflection from BRDF; the phase matrix is obtained from another subroutine
+       ! therefore it is not changed here.
+       ! this call was now just included to satisfy polaris subroutine call
+       ! the line below is just for fun
+       matrix(1,1)=matrix(1,1)
     elseif (process == 10) then
        ! Reflection from ground
 

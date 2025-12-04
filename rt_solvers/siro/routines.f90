@@ -404,7 +404,6 @@ module routines
       j = 1
 
       do while(in_atmos)
-
         r = sqrt(x(j)**2.0_sp+y(j)**2.0_sp+z(j)**2.0_sp)
 
         alt_idx = get_nearest_altitude(r)
@@ -440,7 +439,7 @@ module routines
         tauex = tauabs + tausir
 
         kumex = kumabs + kumsir
-
+        !write(*,*) tausir, kumex
         ! uniform sampling
         startweight(j) = tausir * exp(-kumex)
         !write(*,*) startweight(j)
@@ -482,7 +481,7 @@ module routines
       end do
 
       transmitted_weight = exp(-kumex)
-
+      !write(*,*) 'startweight:',startweight
       nocells = max(1,j-1)
       !write(*,*) nocells
       ! The following 10 rows have been disabled by Antti on 11.7.2019 due to nadir problems
@@ -539,6 +538,7 @@ module routines
 
       inner_prod = dx_end * sunx + dy_end * suny + dz_end * sunz
       angle = acos(inner_prod) / pi * 180.0_sp
+      !write (*,*) 'ANGLE: ',angle
       !if beams point in the same direction, then radiance is directly transmitted
 
       if (angle < source_angular_radius) then
@@ -1863,8 +1863,6 @@ module routines
 
 
       call get_closest_value(azi_out,brf_azi_out,len_brf_azi_out,azi_out_idx)
-      ! Periaatteessa ota mullerista elementit (1,1 + 2,2) / 2, mutta nyt
-      ! riittää tämä, koska brf_M ei sisällä polarisaatiotietoa
 
       !To intepolate linearly, we need the closest wl index and the one next to it
       !If it is outside, then we'll just extrapolate using a flat spectrum
@@ -1906,11 +1904,13 @@ module routines
       end do
       ! NOTE: We assume the surface to be non-polarizing!
       ! That means that in this case we'll just compute:
-      temp = 0.5_sp * (phasem(1,1) + phasem(2,2))
-      phasem(1,1) = 0.5_sp * temp
-      phasem(1,2) = 0.5_sp * temp
-      phasem(2,1) = 0.5_sp * temp
-      phasem(2,2) = 0.5_sp * temp
+      !temp = 0.5_sp * (phasem(1,1) + phasem(2,2))
+      !phasem(1,1) = 0.5_sp * temp
+      !phasem(1,2) = 0.5_sp * temp
+      !phasem(2,1) = 0.5_sp * temp
+      !phasem(2,2) = 0.5_sp * temp
+      ! now fully polarized surface!!
+
       !write (*,*) phasem
       !stop
 
