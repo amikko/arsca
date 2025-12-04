@@ -14,10 +14,10 @@ import arsca
 step_siro = 1.0
 #noph_siro = 100
 
-#casesel = sys.argv[1]
-#noph_siro = int(sys.argv[2])
-casesel = 'd6'
-noph_siro = 1000
+casesel = sys.argv[1]
+noph_siro = int(sys.argv[2])
+#casesel = 'd6'
+#noph_siro = 1000
 
 vzas = [0, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 90]
 vaas = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
