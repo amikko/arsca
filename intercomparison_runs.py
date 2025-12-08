@@ -14,10 +14,13 @@ import arsca
 step_siro = 1.0
 #noph_siro = 100
 
-casesel = sys.argv[1]
-noph_siro = int(sys.argv[2])
-#casesel = 'd6'
-#noph_siro = 1000
+try:
+    casesel = sys.argv[1]
+    noph_siro = int(sys.argv[2])
+except:
+    print("RUNNING DEFAULT SETTINGS")
+    casesel = 'd1'
+    noph_siro = 100
 
 vzas = [0, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 90]
 vaas = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
@@ -121,7 +124,57 @@ elif casesel == 'e2':
                 'alttauabs' : homogenous_layers(alttauabs),
                 'wavelength' : 320,
                 'albedo' : 0.0}    
-    
+elif casesel == 'e3':
+    siro_custom_settings['AER_FILENAME'] = "'input/miefiles/desdust_450nm.dat'"
+    alttausca = np.genfromtxt('datafiles/atmos/tau_rayleigh_450nm_usstd.dat',comments='#')
+    alttauabs = np.genfromtxt('datafiles/atmos/tau_absorption_450nm_usstd.dat',comments='#')
+    settings = {'n_sca' : 2,
+                'n_abs' : 2, 
+                'alttausca' : homogenous_layers(alttausca),
+                'alttauabs' : homogenous_layers(alttauabs),
+                'tau_sca' : 0.5,
+                'aer_lims' : [0.0, 3.0],
+                'wavelength' : 450,
+                'albedo' : 0.0}
+elif casesel == 'e4':
+    siro_custom_settings['AER_FILENAME'] = "'input/miefiles/desdust_450nm.dat'"
+    siro_custom_settings['AER2_FILENAME'] = "'input/miefiles/sulfate_450nm.dat'"
+    alttausca = np.genfromtxt('datafiles/atmos/tau_rayleigh_450nm_usstd.dat',comments='#')
+    alttauabs = np.genfromtxt('datafiles/atmos/tau_absorption_450nm_usstd.dat',comments='#')
+    settings = {'n_sca' : 3,
+                'n_abs' : 3,
+                'alttausca' : homogenous_layers(alttausca),
+                'alttauabs' : homogenous_layers(alttauabs),
+                'tau_sca' : [0.5, 0.05],
+                'aer_lims' : [[0.0, 3.0],[20.0, 21.0]],
+                'wavelength' : 450,
+                'albedo' : 0.0}
+elif casesel == 'e5':
+    siro_custom_settings['AER_FILENAME'] = "'input/miefiles/cirrus_450nm.dat'"
+    alttausca = np.genfromtxt('datafiles/atmos/tau_rayleigh_450nm_usstd.dat',comments='#')
+    alttauabs = np.genfromtxt('datafiles/atmos/tau_absorption_450nm_usstd.dat',comments='#')
+    settings = {'n_sca' : 2,
+                'n_abs' : 2, 
+                'alttausca' : homogenous_layers(alttausca),
+                'alttauabs' : homogenous_layers(alttauabs),
+                'tau_sca' : [0.5, 0.05],
+                'aer_lims' : [[0.0, 3.0],[20.0, 21.0]],
+                'wavelength' : 450,
+                'albedo' : 0.0}
+elif casesel == 'd6':
+    # single layer Rayleigh + albedo
+    siro_custom_settings['BRF_FILENAME'] = "'input/brdf/mischenko_ocean_5ms.nc4'"
+    siro_custom_settings['brdf_reflection'] = True
+    alttausca = np.genfromtxt('datafiles/atmos/tau_rayleigh_450nm_usstd.dat',comments='#')
+    alttauabs = np.genfromtxt('datafiles/atmos/tau_absorption_450nm_usstd.dat',comments='#')
+    settings = {'n_sca' : 1,
+                'n_abs' : 1,
+                'alttausca' : homogenous_layers(alttausca),
+                'alttauabs' : homogenous_layers(alttauabs),
+                'wavelength' : 450,
+                'albedo' : 0.3,
+                'n_lay' : 1,
+                'rayleigh_depol' : 0.03}
 else:
     print('bad case selection: %s' % casesel)
     halt
@@ -140,26 +193,51 @@ def tau_to_xsec(tau,thickness):
     # assuming the number density to be 1/cm3
     return tau / thickness / 1e5
     
+IIUV2IQUV = np.array([[1.0, 1.0, 0.0, 0.0],
+                      [1.0,-1.0, 0.0, 0.0],
+                      [0.0, 0.0, 1.0, 0.0],
+                      [0.0, 0.0, 0.0, 1.0]])
+# Siro uses IIUV-basis internally for the polarized RT calculations
+IQUV2IIUV = np.linalg.inv(IIUV2IQUV)
+schemes = [[1,2,0,0,2,1,0,0,0,0,3,4,0,0,-4,3],
+           [1,2,0,0,2,5,0,0,0,0,3,4,0,0,-4,6],
+           [1,2,0,0,2,1,0,0,0,0,3,4,0,0,-4,3],
+           [1,2,0,0,2,5,0,0,0,0,3,4,0,0,-4,6],
+           [1,2,0,0,2,5,0,0,0,0,3,4,0,0,-4,6],
+           [1,2,0,0,2,5,0,0,0,0,3,4,0,0,-4,6]]
+
 def aerosol_phase_matrix_file_generation():
     infiles = ['./datafiles/mie_results/waso.mie.dat',
                './datafiles/mie_results/sizedistr_spheroid.dat',
-               './datafiles/mie_results/watercloud.mie.dat']
+               './datafiles/mie_results/watercloud.mie.dat',
+               './datafiles/mie_results/desert.cdf', # ssa: 0.83447903
+               './datafiles/mie_results/sulfate.cdf', # ssa: 0.99999994
+               './datafiles/mie_results/ic.ghm.baum.cdf'] # ssa: 1.000000
     outfiles = ['./rt_solvers/siro/input/miefiles/ws_sphere_500nm.dat',
                 './rt_solvers/siro/input/miefiles/spheroid_350nm.dat',
-                './rt_solvers/siro/input/miefiles/water10mic_800nm.dat']
-    schemes = [[1,2,0,0,2,1,0,0,0,0,3,4,0,0,-4,3],
-               [1,2,0,0,2,5,0,0,0,0,3,4,0,0,-4,6],
-               [1,2,0,0,2,1,0,0,0,0,3,4,0,0,-4,3]]
-    IIUV2IQUV = np.array([[1.0, 1.0, 0.0, 0.0],
-                          [1.0,-1.0, 0.0, 0.0],
-                          [0.0, 0.0, 1.0, 0.0],
-                          [0.0, 0.0, 0.0, 1.0]])
-    # Siro uses IIUV-basis internally for the polarized RT calculations
-    IQUV2IIUV = np.linalg.inv(IIUV2IQUV)
-    for i in range(3):
+                './rt_solvers/siro/input/miefiles/water10mic_800nm.dat',
+                './rt_solvers/siro/input/miefiles/desdust_450nm.dat',
+                './rt_solvers/siro/input/miefiles/sulfate_450nm.dat',
+                './rt_solvers/siro/input/miefiles/cirrus_450nm.dat']
+    
+    for i in range(len(infiles)):
         infile = infiles[i]
-        arr = np.genfromtxt(infile,comments='#')
-        arr = arr.T
+        if '.cdf' in infile:
+            try:
+                with netCDF4.Dataset(infile) as ds:
+                    wl_idx = np.argmin(np.abs(ds['wavelen'][:] - 0.45))
+                    reff_idx = 18 if i == 5 else 0
+                    angs = ds['theta'][wl_idx,reff_idx,0,:]
+                    arr = np.zeros((angs.size,7))
+                    arr[:,0] = angs
+                    arr[:,1:] = ds['phase'][wl_idx,0,:,:].T
+            except:
+                # the ic.ghm.baum.cdf file is not included to the git repo, because
+                # it is so large. The generated cirrus_450nm is included however.
+                pass
+        else:
+            arr = np.genfromtxt(infile,comments='#')
+            arr = arr.T
         rows = arr.shape[0]
         muller_data = np.zeros((rows,17))
         for r in range(rows):
@@ -171,6 +249,7 @@ def aerosol_phase_matrix_file_generation():
         np.savetxt(outfiles[i],muller_data)
             
 aerosol_phase_matrix_file_generation()
+
 for idx_sza in range(len(szas)):
     #for idx_sza in [0]:    
     compute_siro = True
