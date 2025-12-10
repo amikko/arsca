@@ -132,7 +132,7 @@ contains
     ! L.O. 8.12.1998
     ! Output: matrix=phase matrix of "process"
     ! Input:
-    !  process = scattering process, 1=Rayleigh, 2-3=Aerosol, 10=reflection
+    !  process = scattering process, 1=Rayleigh, 2-3=Aerosol,,9=BRDF, 10=Lambert
     !  costeta = cosine of scattering (reflection) angle
 
     use global_variables, only : brdf_reflection
@@ -205,8 +205,8 @@ contains
        !Above is the original
        !Below is the ALTIUS wavelength-dependent scattering kernel
 
-       call readmietable_altius(costeta,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11, &
-       p12,p13,p14,p15,p16)
+       call readmietable_altius(costeta,process,p1,p2,p3,p4,p5,p6,p7,p8,p9, &
+       p10,p11,p12,p13,p14,p15,p16)
 
        tempmat(1,1) = p1
        tempmat(1,2) = p2
@@ -305,7 +305,7 @@ contains
 
   end subroutine readmietable
 
-  subroutine readmietable_altius(costeta,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11, &
+  subroutine readmietable_altius(costeta,aer_idx,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11, &
     p12,p13,p14,p15,p16)
     !apologies for this abomination of a function, Fortran isn't my first
     !language, t. Antti
@@ -314,30 +314,29 @@ contains
     implicit none
 
     real(kind=sp) :: costeta,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16
-    integer :: i1,i2,wl_ind
+    integer :: i1,i2,aer_idx
     real(kind=sp) :: d1,d2
 
-    wl_ind = current_wl_ind ! this a global variable, set in the siro main loop
     i1 = binarysearch(cosmie,mielength,costeta)
     i2 = i1+1
     d1 = (cosmie(i2)-costeta)/(cosmie(i2)-cosmie(i1))
     d2 = (costeta-cosmie(i1))/(cosmie(i2)-cosmie(i1))
-    p1 = mie_table(i1,wl_ind,1) * d1 + mie_table(i2,wl_ind,1) * d2
-    p2 = mie_table(i1,wl_ind,2) * d1 + mie_table(i2,wl_ind,2) * d2
-    p3 = mie_table(i1,wl_ind,3) * d1 + mie_table(i2,wl_ind,3) * d2
-    p4 = mie_table(i1,wl_ind,4) * d1 + mie_table(i2,wl_ind,4) * d2
-    p5 = mie_table(i1,wl_ind,5) * d1 + mie_table(i2,wl_ind,5) * d2
-    p6 = mie_table(i1,wl_ind,6) * d1 + mie_table(i2,wl_ind,6) * d2
-    p7 = mie_table(i1,wl_ind,7) * d1 + mie_table(i2,wl_ind,7) * d2
-    p8 = mie_table(i1,wl_ind,8) * d1 + mie_table(i2,wl_ind,8) * d2
-    p9 = mie_table(i1,wl_ind,9) * d1 + mie_table(i2,wl_ind,9) * d2
-    p10 = mie_table(i1,wl_ind,10) * d1 + mie_table(i2,wl_ind,10) * d2
-    p11 = mie_table(i1,wl_ind,11) * d1 + mie_table(i2,wl_ind,11) * d2
-    p12 = mie_table(i1,wl_ind,12) * d1 + mie_table(i2,wl_ind,12) * d2
-    p13 = mie_table(i1,wl_ind,13) * d1 + mie_table(i2,wl_ind,13) * d2
-    p14 = mie_table(i1,wl_ind,14) * d1 + mie_table(i2,wl_ind,14) * d2
-    p15 = mie_table(i1,wl_ind,15) * d1 + mie_table(i2,wl_ind,15) * d2
-    p16 = mie_table(i1,wl_ind,16) * d1 + mie_table(i2,wl_ind,16) * d2
+    p1 = mie_table(i1,aer_idx,1) * d1 + mie_table(i2,aer_idx,1) * d2
+    p2 = mie_table(i1,aer_idx,2) * d1 + mie_table(i2,aer_idx,2) * d2
+    p3 = mie_table(i1,aer_idx,3) * d1 + mie_table(i2,aer_idx,3) * d2
+    p4 = mie_table(i1,aer_idx,4) * d1 + mie_table(i2,aer_idx,4) * d2
+    p5 = mie_table(i1,aer_idx,5) * d1 + mie_table(i2,aer_idx,5) * d2
+    p6 = mie_table(i1,aer_idx,6) * d1 + mie_table(i2,aer_idx,6) * d2
+    p7 = mie_table(i1,aer_idx,7) * d1 + mie_table(i2,aer_idx,7) * d2
+    p8 = mie_table(i1,aer_idx,8) * d1 + mie_table(i2,aer_idx,8) * d2
+    p9 = mie_table(i1,aer_idx,9) * d1 + mie_table(i2,aer_idx,9) * d2
+    p10 = mie_table(i1,aer_idx,10) * d1 + mie_table(i2,aer_idx,10) * d2
+    p11 = mie_table(i1,aer_idx,11) * d1 + mie_table(i2,aer_idx,11) * d2
+    p12 = mie_table(i1,aer_idx,12) * d1 + mie_table(i2,aer_idx,12) * d2
+    p13 = mie_table(i1,aer_idx,13) * d1 + mie_table(i2,aer_idx,13) * d2
+    p14 = mie_table(i1,aer_idx,14) * d1 + mie_table(i2,aer_idx,14) * d2
+    p15 = mie_table(i1,aer_idx,15) * d1 + mie_table(i2,aer_idx,15) * d2
+    p16 = mie_table(i1,aer_idx,16) * d1 + mie_table(i2,aer_idx,16) * d2
 
 
   end subroutine readmietable_altius
@@ -408,7 +407,8 @@ contains
 
 
   !--------------------------------------------------------------------------------
-  subroutine polaris(nx,ny,nz,ox,oy,oz,costeta,cosalpha,sinalpha,process,cummatrix)
+  subroutine polaris(nx,ny,nz,ox,oy,oz,costeta,cosalpha,sinalpha,process,cummatrix,&
+    phasem_brdf,ref)
     !--------------------------------------------------------------------------------
     ! L.O. 17.12.1998.
     ! Updates polarisation parameters (cummatric and pweight) of a photon
@@ -428,7 +428,8 @@ contains
     implicit none
 
     !input/output
-    real(kind=sp), intent(in) :: nx,ny,nz,ox,oy,oz,costeta,cosalpha,sinalpha
+    real(kind=sp), intent(in) :: nx,ny,nz,ox,oy,oz,costeta,cosalpha,sinalpha,ref
+    real(kind=sp), intent(in) ::  phasem_brdf (4,4)
     integer, intent(in) :: process
     real(kind=sp), intent(inout) :: cummatrix (4,4)
     ! local
@@ -442,6 +443,13 @@ contains
     integer :: i,j
 
     call phasematrix(process,costeta,phasem)
+    if (process == 9) then
+      do i=1,4
+         do j=1,4
+            phasem(i,j)=phasem_brdf(i,j)
+         end do
+      end do
+    end if
     do i=1,4
        do j=1,4
           oldcm(i,j)=cummatrix(i,j)
@@ -504,8 +512,14 @@ contains
        if (abs(ph-0.0_sp) > epsilon) then
           pweight = 1.0_sp/ph
        end if
-    else ! process == 10, i.e. surface reflection
-         !
+    else if ( process == 9 ) then
+      ! brdf reflection
+      if (ref > epsilon) then
+        pweight = 1.0_sp / ref
+      end if
+    else
+      ! process == 10, i.e. Lambertian surface reflection
+      !
       pweight = 1.0_sp
     end if
     do i=1,4

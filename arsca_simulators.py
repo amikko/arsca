@@ -223,7 +223,8 @@ def create_siro_settings(custom_settings={}):
                 'step' : 2.0,
                 'brdf_reflection' : False,
                 'BRF_FILENAME' : "'input/brdf/new_snow.nc4'",
-                'AER_FILENAME' : "'input/miefiles/aer_WCO2.dat'"}
+                'AER_FILENAME' : "'input/miefiles/aer_WCO2.dat'",
+                'AER2_FILENAME' : "'input/miefiles/aer_WCO2.dat'"}
 
     #replace the default settings with new values if desired
     default_settings_keys = list(settings.keys())

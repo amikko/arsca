@@ -17,7 +17,7 @@ program siro
   use atmosphere
   use singlescattering
   use polarisation, only : unitmatrix,polaris
-  use global_variables, only : current_wl_ind, current_wl,brf_wl_idx ! these is ONLY for
+  use global_variables, only : current_wl,brf_wl_idx ! these is ONLY for
   use netcdf_io
   !$ use omp_lib
   ! wavelength-dependent muller matrices t. Antti
@@ -97,6 +97,8 @@ program siro
   integer :: discarded_photons, noph_wl
   real(kind=sp), dimension(4,1) :: temp_detvec
   real(kind=sp), dimension(1) :: temp_detw
+  real(kind=sp) :: ref
+  real(kind=sp), dimension(4,4) :: phasem_brdf
 
   !get_command_argument is 0-indexed, so the 0 is the name of the executable and
   !1 is the input file name
@@ -369,7 +371,8 @@ program siro
 
                if (usepolar) then ! calculate polarization
 
-                  call polaris(dirx,diry,dirz,diroldx,diroldy,diroldz,costeta,cosalpha,sinalpha,scatgas,cummatrix)
+                  call polaris(dirx,diry,dirz,diroldx,diroldy,diroldz,costeta,cosalpha,sinalpha,scatgas,&
+                  cummatrix,phasem_brdf,ref)
 
                end if
 
@@ -407,7 +410,8 @@ program siro
                     call scattering_angle(dirx,diry,dirz,scatgas,costeta,cosalpha,sinalpha)
 
                     if (usepolar) then ! calculate polarization
-                       call polaris(dirx,diry,dirz,diroldx,diroldy,diroldz,costeta,cosalpha,sinalpha,scatgas,cummatrix)
+                       call polaris(dirx,diry,dirz,diroldx,diroldy,diroldz,costeta,cosalpha,sinalpha,scatgas,&
+                       cummatrix,phasem_brdf,ref)
                     end if
 
                  else ! photon hits ground
@@ -425,14 +429,16 @@ program siro
                     brf_zen_in,brf_zen_out,brf_azi_out,brf_M,brf_wavelengths)
 
                     call reflection(phox,phoy,phoz,weight,dirx,diry,dirz,cummatrix, &
-                    brf_zen_in, brf_zen_out, brf_azi_out, brf_cdf_zen_out, brf_cdf_azi_out, brf_M,brf_wavelengths)
+                    brf_zen_in, brf_zen_out, brf_azi_out, brf_cdf_zen_out, brf_cdf_azi_out, brf_M,brf_wavelengths, &
+                    phasem_brdf,ref)
 
                     if (usepolar.and.brdf_reflection) then
                        ! calculate polarization, but only if the surface is non-Lambertian!
                        ! NOTE by Antti on 21.4.2022: We'll just have a nonpolarizing surface now so we don't have to update the
                        ! cumulative polarization matrix.
                        ! NOTE by A. on 4.12.2025: polaris now enabled for polarized calculations
-                       call polaris(dirx,diry,dirz,diroldx,diroldy,diroldz,costeta,cosalpha,sinalpha,9,cummatrix)
+                       call polaris(dirx,diry,dirz,diroldx,diroldy,diroldz,costeta,cosalpha,sinalpha,9,&
+                       cummatrix,phasem_brdf,ref)
                     end if
                  end if
 
@@ -459,7 +465,8 @@ program siro
                  call scattering_angle(dirx,diry,dirz,scatgas,costeta,cosalpha,sinalpha)
 
                  if (usepolar) then ! calculate polarization
-                    call polaris(dirx,diry,dirz,diroldx,diroldy,diroldz,costeta,cosalpha,sinalpha,scatgas,cummatrix)
+                    call polaris(dirx,diry,dirz,diroldx,diroldy,diroldz,costeta,cosalpha,sinalpha,scatgas,&
+                    cummatrix,phasem_brdf,ref)
                  end if
 
               end if

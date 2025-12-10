@@ -44,7 +44,7 @@ module parameters
        atmos_layers, &  !internal atmosphere layer discretization
        maxnolay, &      !LOS discretization count
        maxnoord, &      !output file count
-       mielength        !length of miefile
+       mielength        !maximum length of miefile
 
   real(kind=sp) :: &
        minweight, &     !minimum weight of a photon before elimination
@@ -59,46 +59,12 @@ module parameters
 
   character(len=256) :: BRF_FILENAME
   character(len=256) :: AER_FILENAME
-
-  ! mie files
-  character(len=*), parameter :: miefile1 = 'input/miefiles/Continew500.dat'
-  character(len=*), parameter :: miefile2 = 'input/miefiles/BgStrnew500.dat'
-  character(len=*), parameter :: miefile1_altius = 'input/miefiles/aer_ALTIUS_ind01.dat'
-  character(len=*), parameter :: miefile2_altius = 'input/miefiles/aer_ALTIUS_ind02.dat'
-  character(len=*), parameter :: miefile3_altius = 'input/miefiles/aer_ALTIUS_ind03.dat'
-  character(len=*), parameter :: miefile4_altius = 'input/miefiles/aer_ALTIUS_ind04.dat'
-  character(len=*), parameter :: miefile5_altius = 'input/miefiles/aer_ALTIUS_ind05.dat'
-  character(len=*), parameter :: miefile6_altius = 'input/miefiles/aer_ALTIUS_ind06.dat'
-  character(len=*), parameter :: miefile7_altius = 'input/miefiles/aer_ALTIUS_ind07.dat'
-  character(len=*), parameter :: miefile8_altius = 'input/miefiles/aer_ALTIUS_ind08.dat'
-  character(len=*), parameter :: miefile9_altius = 'input/miefiles/aer_ALTIUS_ind09.dat'
-  character(len=*), parameter :: miefile10_altius = 'input/miefiles/aer_ALTIUS_ind10.dat'
-  character(len=*), parameter :: miefile11_altius = 'input/miefiles/aer_ALTIUS_ind11.dat'
-  ! Hello. You're here probably to set up a wavelength-dependent scattering.
-  ! Be sure to verify that you're loading the precisely same files as you're
-  ! inputting. Hopefully you'll do better than me. If not, please increment this
-  ! counter:
-  ! Total work time wasted due to this file: 80 hours
-
-  integer, parameter :: &
-  climatology    = 6,& !This value is a development era artifact, remove this asap
-  crossec = 4!This value is a development era artifact, remove this asap
+  character(len=256) :: AER2_FILENAME
 
   integer :: nosirowl, nosiroalt, nosir, noabs
   integer :: len_brf_zen_in, len_brf_zen_out, &
   len_brf_azi_out, len_brf_wavelengths
 
   real(kind=sp) :: albedo
-
-  real(kind=sp), parameter :: &
-  g = 0.1, & !This value is a development era artifact, remove this asap
-  azimuth = 90.0, &!This value is a development era artifact, remove this asap
-  zenith = 30.0, &!This value is a development era artifact, remove this asap
-  satalt = 800.0
-
-  ! wavelength and altitutde files
-  character(len=256) :: altfile
-  character(len=256) :: wlfile
-
 
 end module parameters

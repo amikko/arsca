@@ -18,8 +18,8 @@ module routines
       implicit none
 
       namelist /param/ noph,usepolar,userefrac,atmos_layers,maxnoord,maxnolay, &
-           minweight,req,ratm,step,brdf_reflection,BRF_FILENAME,AER_FILENAME
-
+           minweight,req,ratm,step,brdf_reflection,BRF_FILENAME,AER_FILENAME, &
+           AER2_FILENAME
       open(unit=11,file='siro_settings.nml',status='old')
       read(11,nml=param)
       close(11)
@@ -46,6 +46,16 @@ module routines
          if (dummy2<1.0_sp) mielength = mielength+1
       end do
       close(12)
+
+      open(unit=12,file=AER2_FILENAME,status='old')
+      erro = 0
+      mielength = 0
+      do while (erro==0)
+         dummy2=0.0_sp
+         read(12,*,iostat=erro) dummy2
+         if (dummy2<1.0_sp) mielength = mielength+1
+      end do
+      close(12)
     end subroutine get_lengths
 
 
@@ -58,7 +68,7 @@ module routines
 
       implicit none
 
-      integer :: i,k,wl_idx
+      integer :: i,k,aer_idx
       real(kind=sp) :: cumtablemax, P11_integral,P12_integral,P21_integral,P22_integral, sinmie
       ! Initialise global polarisation variables, inat = naturally polarised light
       inat(1) = 0.5_sp
@@ -66,51 +76,49 @@ module routines
       inat(3) = 0.0_sp
       inat(4) = 0.0_sp
 
-      ! read mie files
-      ! note that the following isn't a loop, because of the intrinsic
-      ! difficulty of interpreting strings
       call mie_helper(1,AER_FILENAME)
+      call mie_helper(2,AER2_FILENAME)
 
-      wl_idx = current_wl_ind ! should be 1 always
+    do aer_idx=1,2
       do i=1,mielength
 
-         phasetable1(i,wl_idx) = (mie_table(i,wl_idx,1) + mie_table(i,wl_idx,6))
+         phasetable1(i,aer_idx) = (mie_table(i,aer_idx,1) + mie_table(i,aer_idx,6))
 
       end do
-      deltaphasef1(1) = phasetable1(2,wl_idx)-phasetable1(1,wl_idx)
+      deltaphasef1(1) = phasetable1(2,aer_idx)-phasetable1(1,aer_idx)
       !deltaphasef2(1) = phasetable2(2)-phasetable2(1)
       deltamy(1) = cosmie(2)-cosmie(1)
-      write(*,*) mielength, wl_idx
-      cumtable1(1,wl_idx) = 0.5_sp*(phasetable1(1,wl_idx)+phasetable1(2,wl_idx))*deltamy(1)
+      write(*,*) mielength, aer_idx
+      cumtable1(1,aer_idx) = 0.5_sp*(phasetable1(1,aer_idx)+phasetable1(2,aer_idx))*deltamy(1)
       !cumtable2(1) = 0.5_sp*(phasetable2(1)+phasetable2(2))*deltamy(1)
 
       sinmie = sin(0.5_sp*(acos(cosmie(2)) + acos(cosmie(1))))
-      P11_integral = 0.5_sp*sinmie*(mie_table(1,wl_idx,1) + mie_table(2,wl_idx,1))*deltamy(1)
-      P12_integral = 0.5_sp*sinmie*(mie_table(1,wl_idx,2) + mie_table(2,wl_idx,2))*deltamy(1)
-      P21_integral = 0.5_sp*sinmie*(mie_table(1,wl_idx,5) + mie_table(2,wl_idx,5))*deltamy(1)
-      P22_integral = 0.5_sp*sinmie*(mie_table(1,wl_idx,6) + mie_table(2,wl_idx,6))*deltamy(1)
+      P11_integral = 0.5_sp*sinmie*(mie_table(1,aer_idx,1) + mie_table(2,aer_idx,1))*deltamy(1)
+      P12_integral = 0.5_sp*sinmie*(mie_table(1,aer_idx,2) + mie_table(2,aer_idx,2))*deltamy(1)
+      P21_integral = 0.5_sp*sinmie*(mie_table(1,aer_idx,5) + mie_table(2,aer_idx,5))*deltamy(1)
+      P22_integral = 0.5_sp*sinmie*(mie_table(1,aer_idx,6) + mie_table(2,aer_idx,6))*deltamy(1)
 
       do i=2,mielength-1
-         deltaphasef1(i) = phasetable1(i+1,wl_idx)-phasetable1(i,wl_idx)
+         deltaphasef1(i) = phasetable1(i+1,aer_idx)-phasetable1(i,aer_idx)
          !deltaphasef2(i) = phasetable2(i+1)-phasetable2(i)
          deltamy(i) = cosmie(i+1)-cosmie(i)
          sinmie = sin(0.5_sp*(acos(cosmie(i+1)) + acos(cosmie(i))))
          !write (*,*) sinmie
-         P11_integral = P11_integral + 0.5_sp*sinmie*(mie_table(i,wl_idx,1)+mie_table(i+1,wl_idx,1))*deltamy(i)
-         P12_integral = P12_integral + 0.5_sp*sinmie*(mie_table(i,wl_idx,2)+mie_table(i+1,wl_idx,2))*deltamy(i)
-         P21_integral = P21_integral + 0.5_sp*sinmie*(mie_table(i,wl_idx,5)+mie_table(i+1,wl_idx,5))*deltamy(i)
-         P22_integral = P22_integral + 0.5_sp*sinmie*(mie_table(i,wl_idx,6)+mie_table(i+1,wl_idx,6))*deltamy(i)
-         cumtable1(i,wl_idx) = cumtable1(i-1,wl_idx)+ 0.5_sp*(phasetable1(i,wl_idx)+phasetable1(i+1,wl_idx))*deltamy(i)
+         P11_integral = P11_integral + 0.5_sp*sinmie*(mie_table(i,aer_idx,1)+mie_table(i+1,aer_idx,1))*deltamy(i)
+         P12_integral = P12_integral + 0.5_sp*sinmie*(mie_table(i,aer_idx,2)+mie_table(i+1,aer_idx,2))*deltamy(i)
+         P21_integral = P21_integral + 0.5_sp*sinmie*(mie_table(i,aer_idx,5)+mie_table(i+1,aer_idx,5))*deltamy(i)
+         P22_integral = P22_integral + 0.5_sp*sinmie*(mie_table(i,aer_idx,6)+mie_table(i+1,aer_idx,6))*deltamy(i)
+         cumtable1(i,aer_idx) = cumtable1(i-1,aer_idx)+ 0.5_sp*(phasetable1(i,aer_idx)+phasetable1(i+1,aer_idx))*deltamy(i)
       end do
-      cumtablemax = cumtable1(mielength-1,wl_idx)
+      cumtablemax = cumtable1(mielength-1,aer_idx)
       do i=1,mielength-1
-        cumtable1(i,wl_idx) = cumtable1(i,wl_idx) / cumtablemax
+        cumtable1(i,aer_idx) = cumtable1(i,aer_idx) / cumtablemax
       end do
       ! this here normalizes the polarzation matrices.
 
       !write(*,*) P11_integral
 
-
+    end do ! aer_idx
       !end do !wl_idx
     end subroutine read_mie_files
 
@@ -136,74 +144,6 @@ module routines
       close(15)
 
     end subroutine mie_helper
-
-    !---------------------------------
-    subroutine read_waves(wl,wlfactor)
-    !---------------------------------
-
-    ! Read wavelenghts
-
-      implicit none
-
-      ! input/output
-      real(kind=sp),dimension(nosirowl),intent(out) :: wl,wlfactor
-
-      ! local
-      integer :: n
-
-      open(unit=12,file=wlfile,status='old')
-      do n=1,nosirowl
-         read(12,*) wl(n)
-      end do
-      close(12)
-
-      ! all the inputs are nanometres now
-      ! wl = wl/10.0_sp !conversion from angstroms to nanometres
-
-      ! calculate wlfactor
-      do n=1,nosirowl
-         wlfactor(n) = 1.0e-6_sp * (64.328_sp + 29498.1_sp / (146.0_sp-1e+6_sp/(wl(n)*wl(n))) &
-              + 255.4_sp / (41.0_sp-1e+6_sp/(wl(n)*wl(n))) )
-      end do
-
-    end subroutine read_waves
-
-    !-----------------------------------
-    subroutine read_altitudes(altitudes)
-    !-----------------------------------
-
-      implicit none
-
-      ! input/output
-      real(kind=sp), dimension(nosiroalt), intent(out) :: altitudes
-
-      ! local
-      integer :: n
-
-      open(unit=12,file=altfile,status='old')
-      do n=1,nosiroalt
-         read(12,*) altitudes(n)
-      end do
-      close(12)
-
-    end subroutine read_altitudes
-
-    !-------------------------
-    subroutine sun_direction()
-    !-------------------------
-    ! Calculate direction of Sun at tangent point
-    ! (from zenith and azimuth angles)
-
-      use global_variables, only : sunx,suny,sunz
-
-      implicit none
-
-      sunx = cos(pi/180.0_sp*azimuth)*sin(pi/180.0_sp*zenith)
-      suny = sin(pi/180.0_sp*azimuth)*sin(pi/180.0_sp*zenith)
-      sunz = cos(pi/180.0_sp*zenith)
-
-    end subroutine sun_direction
-
 
     !----------------------
     subroutine brdf_setup(brf_M,brf_zen_out,brf_cdf_zen_out,brf_cdf_azi_out)
@@ -292,34 +232,12 @@ module routines
 
     end subroutine get_closest_value
 
-    !-------------------------------------
-    subroutine make_coordinates(tanheight)
-    !-------------------------------------
-    ! Calculate satellite coordinates according to
-    ! satellite altitude and tangent point altitude
-
-      use global_variables, only : satx,saty,satz,detx,dety,detz
-
-      implicit none
-
-      ! input
-      real(kind=sp), intent(in) :: tanheight
-
-      satz = req + tanheight
-      saty = 0.0_sp
-      satx = -1.0_sp * sqrt((req+satalt)**2.0_sp-satz**2.0_sp)
-
-      detx = 1.0_sp
-      dety = 0.0_sp
-      detz = 0.0_sp
-
-    end subroutine make_coordinates
 
 
     subroutine tables_general (kumtn,nocells,process,startweight,x,y,z,dx,dy,dz, &
       pathlayer,wl_abs_xsec,wl_sca_xsec,wlfact,abs_prof,sca_prof,transmitted_weight, &
       ground_los)
-      use global_variables, only : satx,saty,satz,detx,dety,detz,current_wl
+      use global_variables, only : satx,saty,satz,detx,dety,detz
       use atmosphere
       use refra
 
@@ -517,12 +435,6 @@ module routines
       !write(*,*) startweight(1:nocells)
       !stop
       !stop
-      if (current_wl > 761.04) then
-        !write (*,*) transmitted_weight
-        !write (*,*) kumtn
-        !write (*,*) startweight
-        !stop
-      end if
     end subroutine tables_general
 
     subroutine direct_transmissivity(dx_end,dy_end,dz_end,source_angular_radius,direct_los)
@@ -1084,7 +996,7 @@ module routines
          if (ran1 <= 0.5_sp) kosini = -1.0_sp*kosini
       else
          call random_number(ran1)
-         ind = binarysearch(cumtable1(1:mielength,current_wl_ind),mielength,ran1)
+         ind = binarysearch(cumtable1(1:mielength,scatgas-1),mielength,ran1)
          kosini = cosmie(ind)
 
          !The above is for scattering using the mie tables
@@ -1389,7 +1301,7 @@ module routines
       ! off the surface.
       use atmosphere
       use global_variables, only : sunx,suny,sunz,inat,brdf_reflection
-      use polarisation, only : maxvecmulti
+      use polarisation, only : maxvecmulti,forwardrota
 
       implicit none
 
@@ -1404,7 +1316,7 @@ module routines
       real(kind=sp),dimension(:), intent(in) :: brf_zen_in, brf_zen_out, brf_azi_out, brf_wavelengths
       real(kind=sp),dimension(:,:,:,:,:,:), intent(in) :: brf_M
       ! polarisation
-      real(kind=sp), dimension(4,4) :: cummatrix, phasem
+      real(kind=sp), dimension(4,4) :: rota,cummatrix, phasem
       real(kind=sp), dimension(4,maxnoord) :: detvec
 
       ! local
@@ -1416,7 +1328,7 @@ module routines
       logical, save :: half,groundhit
       integer, save :: ord,j,lay,noce,index,l,abs_idx,sca_idx
       ! polarisation
-      real(kind=sp), dimension(4), save :: vec
+      real(kind=sp), dimension(4), save :: vec,vec2,lvec
       real(kind=sp) :: ref
       !$OMP THREADPRIVATE(x,y,z,sirx,siry,sirz,limit,ptulo,rinx,riny,rinz)
       !$OMP THREADPRIVATE(absolut,r,singtn,scatr,cosi,x1,y1,z1,rin,u,vakio)
@@ -1561,9 +1473,12 @@ module routines
          !write (*,*) 'ground_sun_detw: ', detw(ord)
          if (usepolar) then
             ! update polarisation parameters
-            call maxvecmulti(cummatrix,inat,vec)
+            call forwardrota(diroldx,diroldy,diroldz,sunx,suny,sunz,rota)
+            call maxvecmulti(phasem,inat,vec)
+            call maxvecmulti(rota,vec,vec2)
+            call maxvecmulti(cummatrix,vec2,lvec)
             do l=1,4
-               detvec(l,ord) = detvec(l,ord)+vec(l)*singtn
+               detvec(l,ord) = detvec(l,ord)+lvec(l)*singtn
             end do
          end if
            !$OMP END CRITICAL
@@ -1612,7 +1527,8 @@ module routines
 
     !--------------------------------------------------------------------
     subroutine reflection(phox,phoy,phoz,weight,dirx,diry,dirz,cummatrix, &
-      brf_zen_in, brf_zen_out, brf_azi_out, brf_cdf_zen_out, brf_cdf_azi_out, brf_M, brf_wavelengths)
+      brf_zen_in, brf_zen_out, brf_azi_out, brf_cdf_zen_out, brf_cdf_azi_out, brf_M,&
+       brf_wavelengths, phasem, ref)
     !--------------------------------------------------------------------
       ! Called when a traced photon is scattered off the surface into a new
       ! direction.
@@ -1628,6 +1544,8 @@ module routines
       real(kind=sp), intent(inout) :: weight
       real(kind=sp), intent(inout) :: dirx,diry,dirz
       real(kind=sp), dimension(4,4), intent(inout) :: cummatrix
+      real(kind=sp), dimension(4,4), intent(inout) :: phasem
+      real(kind=sp), intent(inout) :: ref
 
       real(kind=sp), dimension(:) :: brf_zen_in, brf_zen_out, brf_azi_out, brf_wavelengths
       real(kind=sp), dimension(:,:,:) :: brf_cdf_zen_out
@@ -1637,9 +1555,9 @@ module routines
       !local
       integer :: i,j
       logical :: baddir
-      real(kind=sp) :: ran1,ptulo,norm,rnorm,ref,diroldx,diroldy,diroldz
+      real(kind=sp) :: ran1,ptulo,norm,rnorm,diroldx,diroldy,diroldz
       ! for polarization..
-      real(kind=sp), dimension(4,4) :: phasem,matrix
+      real(kind=sp), dimension(4,4) :: matrix
 
       rnorm = sqrt(phox*phox+phoy*phoy+phoz*phoz)
 
@@ -1903,6 +1821,9 @@ module routines
             phasem(i,j) = (1 - wl_scal) * brf_M(zen_in_idx, brf_wl_idx, zen_out_idx, azi_out_idx, i, j) &
             + wl_scal * brf_M(zen_in_idx, brf_wl_idx, zen_out_idx, azi_out_idx, i, j)
           end if
+          if (ref > epsilon1) then
+            phasem(i,j) = phasem(i,j) / ref
+          end if
         end do
       end do
       ! NOTE: We assume the surface to be non-polarizing!
@@ -2032,12 +1953,7 @@ module routines
       open(unit=10,file='output/'//trim(clima)//trim(outfilename)//'.param',status='unknown')
       write(10,'(f4.1)') version
       write(10,'(i7)') noph
-      write(10,'(f5.1)') zenith
-      write(10,'(f5.1)') azimuth
       write(10,'(f5.2)') albedo
-      write(10,'(f5.2)') g
-      write(10,'(f6.1)') satalt
-      write(10,'(i2)') climatology
       close(10)
 
       open(unit=10,file='output/'//trim(clima)//trim(outfilename)//'.psiroI',status='unknown')
@@ -2112,12 +2028,7 @@ module routines
       open(unit=10,file='output/'//trim(clima)//trim(outfilename)//'.param',status='unknown')
       write(10,'(f4.1)') version
       write(10,'(i7)') noph
-      write(10,'(f5.1)') zenith
-      write(10,'(f5.1)') azimuth
       write(10,'(f5.2)') albedo
-      write(10,'(f5.2)') g
-      write(10,'(f6.1)') satalt
-      write(10,'(i2)') climatology
       close(10)
 
       open(unit=10,file='output/'//trim(clima)//trim(outfilename)//'.psiroI',status='unknown')
@@ -2205,20 +2116,7 @@ module routines
       write(*,*) ' Running Siro V2.2.1 '
       write(*,*) ' --------------------'
       write(*,*) ' '
-      if (climatology==1) then
-         write(*,'(2x,a34)') 'Climatology:        OSIRIS+Lowtran tropic'
-      elseif (climatology==2) then
-         write(*,'(2x,a47)') 'Climatology:        OSIRIS+Lowtran mid-latitude summer'
-      elseif (climatology==3) then
-         write(*,'(2x,a47)') 'Climatology:        OSIRIS+Lowtran mid-latitude winter'
-      else if (climatology==4) then
-         write(*,'(2x,a41)') 'Climatology:        OSIRIS+Lowtran antarctica'
-      else if (climatology==5) then
-         write(*,'(2x,a41)') 'Climatology:        OSIRIS+Lowtran arctic'
-      end if
 
-      write(*,'(2x,a7,12x,f5.1)') 'Zenith: ', zenith
-      write(*,'(2x,a8,12x,f5.1)') 'Azimuth: ', azimuth
       write(*,'(2x,a7,11x,f5.1)') 'Albedo: ', albedo
       write(*,'(2x,a18,i8)') 'Number of photons: ', noph
       !if (usetemp) then
@@ -2226,11 +2124,6 @@ module routines
       !else
       !   write(*,'(2x,a28)') 'Temperature:        constant'
       !end if
-      if (crossec == 1) then
-         write(*,'(2x,a43)') 'Cross sections:     GOMOS/OSIRIS resolution'
-      elseif (crossec == 2) then
-         write(*,'(2x,a48)') 'Cross sections:     GOMOS bright limb resolution'
-      end if
       if (userefrac) then
          write(*,'(2x,a22)') 'Refraction:         on'
       else

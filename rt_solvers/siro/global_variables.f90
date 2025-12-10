@@ -26,12 +26,12 @@ module global_variables
   real(kind=sp), dimension(maxtable), save :: cosmie, mie1p1,mie1p2,mie1p3,mie1p4,mie2p1,mie2p2,mie2p3,mie2p4
   real(kind=sp), dimension(maxtable,11), save :: cumtable1, cumtable2, phasetable1, phasetable2
   real(kind=sp), dimension(maxtable), save :: deltaphasef1, deltaphasef2, deltamy
-  real(kind=sp), dimension(maxtable,1,16), save :: mie_table
-
-  !                                 ^-- these 11's stand for each of the wavelengths
+  real(kind=sp), dimension(maxtable,2,16), save :: mie_table
+  !                                 ^-- this value originally stood
+  !                                     for each of the wavelengths
+  !                                     but now it is aerosol type.
 
   real(kind=sp) :: atmos_layer_thickness
-  integer, parameter :: current_wl_ind = 1
   integer :: brf_wl_idx
   real(kind=sp) :: current_wl
   logical :: direct_beam
