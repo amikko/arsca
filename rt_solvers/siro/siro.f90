@@ -15,7 +15,7 @@ program siro
   use parameters
   use routines
   use atmosphere
-  use singlescattering
+  !use singlescattering
   use polarisation, only : unitmatrix,polaris
   use global_variables, only : current_wl,brf_wl_idx ! these is ONLY for
   use netcdf_io
@@ -90,6 +90,7 @@ program siro
   logical :: down
   logical :: ground_los !is ground in the LOS
   logical :: direct_los !is source in the LOS
+  logical :: hits_atmos !is atmos hit. if not -> return early
   logical :: ground_scattering !if the photon's first scattering point is on ground
   real(kind=sp) :: transmitted_weight
   integer :: DEBUG_scattering_counter
@@ -109,7 +110,7 @@ program siro
 
   call read_parameters() ! read input parameters from siro.nml file
 
-  call get_lengths() ! get mielength
+  call get_lengths() ! get mielengths
 
   call nc_get_lengths() ! get nosirowl, nosiroalt, nosir and noabs
 
@@ -194,14 +195,11 @@ program siro
   call nc_create_atmosphere(atmosalt, sca_prof, abs_prof, pres_prof, temp_prof, &
                   sca_xsec, abs_xsec)
 
-  !write(*,*) sca_prof, abs_prof, sca_xsec, abs_xsec
+  write(*,*) sca_prof, abs_prof, sca_xsec, abs_xsec
 
   if (brdf_reflection) then
     call nc_get_brdf(brf_zen_in,brf_wavelengths,brf_zen_out,brf_azi_out,brf_M)
     call brdf_setup(brf_M,brf_zen_out,brf_cdf_zen_out,brf_cdf_azi_out)
-    !write(*,*) 'No polarization effects of the surface are taken into account due to unverified implementation'
-    !This requires changes in polaris functions and routines where you sample from BRDF.
-    !write(*,*) 'Uncomment the polaris call around line number 420 to enable it.'
   end if
 
   call nc_read_albedo()
@@ -294,8 +292,11 @@ program siro
 
         call tables_general (loskumtn,losnocells,losprocess,losstartweight,losx,losy,losz, &
              losdx,losdy,losdz,loslayers,wl_abs_xsec,wl_sca_xsec,wlfact,abs_prof,sca_prof, &
-             transmitted_weight,ground_los) ! discretisize LOS
-
+             transmitted_weight,ground_los, hits_atmos) ! discretisize LOS
+        if (.not. hits_atmos) then
+          write (*,*) 'not hitting atmos, skipping los'
+          exit
+        end if
         !if the LOS beam hits the light source
         call direct_transmissivity(losdx(losnocells),losdy(losnocells),losdz(losnocells), &
         source_angular_radius,direct_los)

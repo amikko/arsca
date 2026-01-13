@@ -39,21 +39,21 @@ module routines
       ! check how long the miefile is
       open(unit=12,file=AER_FILENAME,status='old')
       erro = 0
-      mielength = 0
+      mielength(1) = 0
       do while (erro==0)
          dummy2=0.0_sp
          read(12,*,iostat=erro) dummy2
-         if (dummy2<1.0_sp) mielength = mielength+1
+         if (dummy2<1.0_sp) mielength(1) = mielength(1)+1
       end do
       close(12)
 
       open(unit=12,file=AER2_FILENAME,status='old')
       erro = 0
-      mielength = 0
+      mielength(2) = 0
       do while (erro==0)
          dummy2=0.0_sp
          read(12,*,iostat=erro) dummy2
-         if (dummy2<1.0_sp) mielength = mielength+1
+         if (dummy2<1.0_sp) mielength(2) = mielength(2)+1
       end do
       close(12)
     end subroutine get_lengths
@@ -80,7 +80,7 @@ module routines
       call mie_helper(2,AER2_FILENAME)
 
     do aer_idx=1,2
-      do i=1,mielength
+      do i=1,mielength(aer_idx)
 
          phasetable1(i,aer_idx) = (mie_table(i,aer_idx,1) + mie_table(i,aer_idx,6))
 
@@ -88,7 +88,7 @@ module routines
       deltaphasef1(1) = phasetable1(2,aer_idx)-phasetable1(1,aer_idx)
       !deltaphasef2(1) = phasetable2(2)-phasetable2(1)
       deltamy(1) = cosmie(2)-cosmie(1)
-      write(*,*) mielength, aer_idx
+      write(*,*) mielength(aer_idx), aer_idx
       cumtable1(1,aer_idx) = 0.5_sp*(phasetable1(1,aer_idx)+phasetable1(2,aer_idx))*deltamy(1)
       !cumtable2(1) = 0.5_sp*(phasetable2(1)+phasetable2(2))*deltamy(1)
 
@@ -98,7 +98,7 @@ module routines
       P21_integral = 0.5_sp*sinmie*(mie_table(1,aer_idx,5) + mie_table(2,aer_idx,5))*deltamy(1)
       P22_integral = 0.5_sp*sinmie*(mie_table(1,aer_idx,6) + mie_table(2,aer_idx,6))*deltamy(1)
 
-      do i=2,mielength-1
+      do i=2,mielength(aer_idx)-1
          deltaphasef1(i) = phasetable1(i+1,aer_idx)-phasetable1(i,aer_idx)
          !deltaphasef2(i) = phasetable2(i+1)-phasetable2(i)
          deltamy(i) = cosmie(i+1)-cosmie(i)
@@ -110,8 +110,8 @@ module routines
          P22_integral = P22_integral + 0.5_sp*sinmie*(mie_table(i,aer_idx,6)+mie_table(i+1,aer_idx,6))*deltamy(i)
          cumtable1(i,aer_idx) = cumtable1(i-1,aer_idx)+ 0.5_sp*(phasetable1(i,aer_idx)+phasetable1(i+1,aer_idx))*deltamy(i)
       end do
-      cumtablemax = cumtable1(mielength-1,aer_idx)
-      do i=1,mielength-1
+      cumtablemax = cumtable1(mielength(aer_idx)-1,aer_idx)
+      do i=1,mielength(aer_idx)-1
         cumtable1(i,aer_idx) = cumtable1(i,aer_idx) / cumtablemax
       end do
       ! this here normalizes the polarzation matrices.
@@ -134,7 +134,7 @@ module routines
 
       open(unit=15,file=filename,status='old',form='formatted')
 
-      do i=1,mielength
+      do i=1,mielength(k)
         read(15,*) cosmie(i),mie_table(i,k,1),mie_table(i,k,2),mie_table(i,k,3), &
         mie_table(i,k,4),mie_table(i,k,5),mie_table(i,k,6),mie_table(i,k,7), &
         mie_table(i,k,8),mie_table(i,k,9),mie_table(i,k,10),mie_table(i,k,11), &
@@ -236,7 +236,7 @@ module routines
 
     subroutine tables_general (kumtn,nocells,process,startweight,x,y,z,dx,dy,dz, &
       pathlayer,wl_abs_xsec,wl_sca_xsec,wlfact,abs_prof,sca_prof,transmitted_weight, &
-      ground_los)
+      ground_los,hits_atmos)
       use global_variables, only : satx,saty,satz,detx,dety,detz
       use atmosphere
       use refra
@@ -253,7 +253,7 @@ module routines
       real(kind=sp), dimension(maxtable), intent(out) :: startweight
       real(kind=sp), dimension(maxtable), intent(out) :: x,y,z,dx,dy,dz
       real(kind=sp), intent(out) :: transmitted_weight
-      logical, intent(out) :: ground_los
+      logical, intent(out) :: ground_los, hits_atmos
       real(kind=sp), intent(in) :: wlfact
       ! local
       real(kind=sp) :: r,tauabs,tausir,tauex,kumabs,kumsir,kumex,scalew
@@ -292,7 +292,7 @@ module routines
       step_length = sqrt(detx**2.0_sp + dety**2.0_sp + detz**2.0_sp)
       sat_r = sqrt(satx**2.0_sp + saty**2.0_sp + satz**2.0_sp)
 
-
+      hits_atmos = .true.
       do while(.not.in_atmos)
         x_test = x_test + detx
         y_test = y_test + dety
@@ -305,12 +305,12 @@ module routines
         if (total_dist > 2.0_sp * sat_r + 2.0_sp * ratm) then
           !the cutoff-distance is absurdly long, but those wasted cycles are
           !what you deserve for missing the whole atmosphere
-          write (*,*) 'Check the input parameters! The line-of-sight beam doesn"t hit the atmosphere!'
-          write (*,*) 'Halting Siro...'
-          stop
+          !write (*,*) 'Check the input parameters! The line-of-sight beam doesn"t hit the atmosphere!'
+          !write (*,*) 'Halting Siro...'
+          hits_atmos = .false.
+          return
         end if
       end do
-
       x(1) = x_test
       y(1) = y_test
       z(1) = z_test
@@ -461,144 +461,6 @@ module routines
 
     end subroutine direct_transmissivity
 
-    !---------------------------------------------------------------------------------------------------------------------
-    subroutine tables_limb (tanheight,kumtn,nocells,process,startweight,x,y,z,dx,dy,dz,pathlayer,o3cr,no2cr,aircr,aercr,wlfact)
-    !---------------------------------------------------------------------------------------------------------------------
-
-      use global_variables, only : satx,saty,satz,detx,dety,detz
-      use atmosphere
-      use refra
-
-      implicit none
-
-      ! input/output
-      real(kind=sp), intent(in) :: tanheight
-      real(kind=sp), dimension(atmos_layers),intent(in) :: o3cr,no2cr
-      real(kind=sp), intent(in) :: aircr,aercr
-      integer, intent(out) :: nocells
-      real(kind=sp), dimension(maxtable), intent(out) :: kumtn
-      real(kind=sp), dimension(maxtable,nosir), intent(out) :: process
-      real(kind=sp), dimension(maxtable), intent(out) :: startweight
-      real(kind=sp), dimension(maxtable), intent(out) :: x,y,z,dx,dy,dz
-      integer, dimension(maxtable), intent(out) :: pathlayer
-      real(kind=sp), intent(in) :: wlfact
-
-      ! local
-      real(kind=sp), dimension(maxtable) :: halfx,halfy,halfz,halfdx,halfdy,halfdz
-      real(kind=sp) :: r,tauabs,tausir,tauex,kumabs,kumsir,kumex,scalew
-      integer :: j,nohalf,lay
-
-      real(kind=sp) :: vakio1,vakio2,vakio3,vakio4
-      integer :: index
-
-      vakio1 = step*100000.0_sp
-      vakio2 = step*100000.0_sp
-      vakio3 = step*aircr*100000.0_sp
-      vakio4 = step*aercr*100000.0_sp
-
-      ! Coordinates and propagation direction at tangent point
-      halfx(1) = 0.0_sp
-      halfy(1) = 0.0_sp
-      halfz(1) = req + tanheight
-      halfdx(1) = 1.0_sp
-      halfdy(1) = 0.0_sp
-      halfdz(1) = 0.0_sp
-      r = halfz(1)
-
-      ! Trace the second half of the LOS
-      j=1
-      do while (r <= ratm)
-         call calcrefra(halfx(j),halfy(j),halfz(j),halfdx(j),halfdy(j),halfdz(j), &
-              halfdx(j+1),halfdy(j+1),halfdz(j+1),wlfact)
-         j = j+1
-         halfx(j) = halfx(j-1) + step*(halfdx(j-1) + halfdx(j))/2.0_sp
-         halfy(j) = halfy(j-1) + step*(halfdy(j-1) + halfdy(j))/2.0_sp
-         halfz(j) = halfz(j-1) + step*(halfdz(j-1) + halfdz(j))/2.0_sp
-         r = sqrt(halfx(j)**2.0_sp + halfy(j)**2.0_sp + halfz(j)**2.0_sp)
-      end do
-
-      nohalf = j - 1
-
-      ! Fill first half
-      do j=1,nohalf
-         x(j) = -1.0_sp*halfx(nohalf+2-j)
-         y(j) = -1.0_sp*halfy(nohalf+2-j)
-         z(j) = halfz(nohalf+2-j)
-         dx(j) = halfdx(nohalf+2-j)
-         dy(j) = halfdy(nohalf+2-j)
-         dz(j) = -1.0_sp*(halfdz(nohalf+2-j))
-      end do
-
-      ! Fill second half
-      do j=nohalf+1,2*nohalf+1
-         x(j) = halfx(j-nohalf)
-         y(j) = halfy(j-nohalf)
-         z(j) = halfz(j-nohalf)
-         dx(j) = halfdx(j-nohalf)
-         dy(j) = halfdy(j-nohalf)
-         dz(j) = halfdz(j-nohalf)
-      end do
-
-      nocells = 2*nohalf + 1
-
-      ! calculate probabilitites
-
-      kumabs = 0.0_sp
-      kumsir = 0.0_sp
-
-      do j = 1,nocells
-
-         r = sqrt(x(j)**2.0_sp+y(j)**2.0_sp+z(j)**2.0_sp)
-
-         index = get_nearest_altitude(r)
-
-         if (index > atmos_layers) then
-            index = atmos_layers
-         elseif (index == 0 .or. index == 1) then
-            index = 2
-         elseif (index < 0) then
-            index = 1
-         end if
-
-         tauabs = o3prof(index)*o3cr(index)*vakio1 + no2prof(index)*no2cr(index)*vakio2
-
-         kumabs = kumabs + tauabs
-
-         tausir = airprof(index)*vakio3 + aeroprof(index)*vakio4
-
-         process(j,1) = airprof(index)*vakio3
-         process(j,2) = tausir
-         !process(j,2) = aeroprof(index)*vakio4
-
-         kumsir = kumsir + tausir
-
-         process(j,1:nosir) = process(j,1:nosir) / process(j,nosir)
-
-
-
-         tauex = tauabs + tausir
-
-         kumex = kumabs + kumsir
-
-         ! uniform sampling
-         startweight(j) = tausir*exp(-kumex)
-
-         kumtn(j) = real(j,kind=sp)
-
-         lay = int(r-req) + 1
-
-         pathlayer(j) = lay
-
-      end do
-
-      scalew = kumtn(nocells)
-
-      do j = 1,nocells
-         kumtn(j) = kumtn(j)/scalew
-         startweight(j) = startweight(j)*scalew
-      end do
-
-    end subroutine tables_limb
 
     !----------------------------------------------------------------------
     subroutine first_scattering_point(kumtn,nocells,process,startweight, &
@@ -996,7 +858,7 @@ module routines
          if (ran1 <= 0.5_sp) kosini = -1.0_sp*kosini
       else
          call random_number(ran1)
-         ind = binarysearch(cumtable1(1:mielength,scatgas-1),mielength,ran1)
+         ind = binarysearch(cumtable1(1:mielength(scatgas-1),scatgas-1),mielength(scatgas-1),ran1)
          kosini = cosmie(ind)
 
          !The above is for scattering using the mie tables

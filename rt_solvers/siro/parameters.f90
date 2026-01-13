@@ -38,13 +38,14 @@ module parameters
        !selvitä mihin refangle perustuu!
 
 
-  ! These parameters are now read from siro_settings.nml file
+  ! Most of these parameters are now read from siro_settings.nml file
   integer :: &
        noph, &          !photon count for each wavelength
        atmos_layers, &  !internal atmosphere layer discretization
        maxnolay, &      !LOS discretization count
-       maxnoord, &      !output file count
-       mielength        !maximum length of miefile
+       maxnoord      !output file count
+
+  integer, dimension(2) :: mielength !lengths of the aerosol files
 
   real(kind=sp) :: &
        minweight, &     !minimum weight of a photon before elimination

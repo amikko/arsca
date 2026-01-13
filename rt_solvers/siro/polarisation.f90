@@ -205,7 +205,7 @@ contains
        !Above is the original
        !Below is the ALTIUS wavelength-dependent scattering kernel
 
-       call readmietable_altius(costeta,process,p1,p2,p3,p4,p5,p6,p7,p8,p9, &
+       call readmietable_altius(costeta,process-1,p1,p2,p3,p4,p5,p6,p7,p8,p9, &
        p10,p11,p12,p13,p14,p15,p16)
 
        tempmat(1,1) = p1
@@ -282,7 +282,7 @@ contains
     integer :: i1,i2
     real(kind=sp) :: d1,d2
 
-    i1 = binarysearch(cosmie,mielength,costeta)
+    i1 = binarysearch(cosmie,mielength(aero),costeta)
     i2 = i1+1
 
     d1 = (cosmie(i2)-costeta)/(cosmie(i2)-cosmie(i1))
@@ -317,7 +317,7 @@ contains
     integer :: i1,i2,aer_idx
     real(kind=sp) :: d1,d2
 
-    i1 = binarysearch(cosmie,mielength,costeta)
+    i1 = binarysearch(cosmie,mielength(aer_idx),costeta)
     i2 = i1+1
     d1 = (cosmie(i2)-costeta)/(cosmie(i2)-cosmie(i1))
     d2 = (costeta-cosmie(i1))/(cosmie(i2)-cosmie(i1))

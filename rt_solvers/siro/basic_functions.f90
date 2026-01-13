@@ -82,14 +82,17 @@ contains
     if (index == 1) then                                       ! Rayleigh scattering phase function
        phase = (0.75_sp/(4.0_sp*pi))*(1.0_sp+costheta**2.0_sp) ! IQUV-kannassa
 
-    elseif ((index == 2).or.(index == 3)) then                                   ! Mie scattering phase function
+    elseif (index == 2) then                                   ! Mie scattering phase function
        !phase = (1.0_sp/(4.0_sp*pi))*(1.0_sp-g**2.0_sp)/ &
        !      ((1.0_sp+g**2.0_sp-2.0_sp*g*costheta)**1.5_sp)
        !Above is HG-phase function for aerosols, below is phasetable from file!
-       ind = binarysearch(cosmie(1:mielength),mielength,costheta)
+       ind = binarysearch(cosmie(1:mielength(1)),mielength(1),costheta)
        !1/4pi on oikea!!!
-       phase = 1.0_sp / (4.0_sp * pi) * phasetable1(ind,current_wl_ind)
+       phase = 1.0_sp / (4.0_sp * pi) * phasetable1(ind,1)
        !write (*,*) costheta, phase
+     elseif (index == 3) then
+        ind = binarysearch(cosmie(1:mielength(2)),mielength(2),costheta)
+        phase = 1.0_sp / (4.0_sp * pi) * phasetable1(ind,2)
     else
        phase = 0.0_sp
     end if

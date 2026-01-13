@@ -6,7 +6,6 @@ OBJECTS =   parameters.o \
 	    refra.o \
 	    polarisation.o \
             routines.o \
-            singlescattering.o \
             netcdf_io.o \
 	    siro.o\
 
@@ -33,8 +32,6 @@ polarisation.o : polarisation.f90
 	${COMPILE} ${COPTIONS} polarisation.f90
 routines.o : routines.f90
 	${COMPILE} ${COPTIONS} routines.f90
-singlescattering.o : singlescattering.f90
-	${COMPILE} ${COPTIONS} singlescattering.f90
 netcdf_io.o : netcdf_io.f90
 	${COMPILE} ${COPTIONS} netcdf_io.f90
 siro.o : siro.f90 
