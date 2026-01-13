@@ -19,7 +19,7 @@ try:
     noph_siro = int(sys.argv[2])
 except:
     print("RUNNING DEFAULT SETTINGS")
-    casesel = 'd1'
+    casesel = 'e4'
     noph_siro = 100
 
 vzas = [0, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 90]
@@ -27,6 +27,7 @@ vaas = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160
 szas = [30, 60, 80, 87, 90, 93, 96, 99]
 #szas = [30]
 saas = [0]
+solar_lon_e6 = [50,90,110,130]
 salts= [0 + 1e-4, 120 - 1e-4] # sensor altitude, kilometres
 atmos_thickness = 120
 R_earth = 6371
@@ -132,6 +133,7 @@ elif casesel == 'e3':
                 'n_abs' : 2, 
                 'alttausca' : homogenous_layers(alttausca),
                 'alttauabs' : homogenous_layers(alttauabs),
+                'ssa' : 0.83447903,
                 'tau_sca' : 0.5,
                 'aer_lims' : [0.0, 3.0],
                 'wavelength' : 450,
@@ -145,7 +147,8 @@ elif casesel == 'e4':
                 'n_abs' : 3,
                 'alttausca' : homogenous_layers(alttausca),
                 'alttauabs' : homogenous_layers(alttauabs),
-                'tau_sca' : [0.5, 0.05],
+                'ssa' : [0.83447903, 0.99999994],
+                'tau_sca' : [0.5, 0.00],
                 'aer_lims' : [[0.0, 3.0],[20.0, 21.0]],
                 'wavelength' : 450,
                 'albedo' : 0.0}
@@ -157,11 +160,12 @@ elif casesel == 'e5':
                 'n_abs' : 2, 
                 'alttausca' : homogenous_layers(alttausca),
                 'alttauabs' : homogenous_layers(alttauabs),
-                'tau_sca' : [0.5, 0.05],
-                'aer_lims' : [[0.0, 3.0],[20.0, 21.0]],
+                'ssa' : 1.000000,
+                'tau_sca' : 1.0,
+                'aer_lims' : [10.0, 11.0],
                 'wavelength' : 450,
                 'albedo' : 0.0}
-elif casesel == 'd6':
+elif casesel == 'e6':
     # single layer Rayleigh + albedo
     siro_custom_settings['BRF_FILENAME'] = "'input/brdf/mischenko_ocean_5ms.nc4'"
     siro_custom_settings['brdf_reflection'] = True
@@ -175,6 +179,7 @@ elif casesel == 'd6':
                 'albedo' : 0.3,
                 'n_lay' : 1,
                 'rayleigh_depol' : 0.03}
+    szas = solar_lon_e6
 else:
     print('bad case selection: %s' % casesel)
     halt
@@ -184,9 +189,15 @@ outfilename = 'iprt_phase3_Siro.nc'
 def save_results_to_nc(casesel,idx_sza,stokes):
     var_names = ['%s_sza','%s_saa','%s_vza','%s_vaa','%s_zout','radiance_%s']
     var_names = [vname % casesel for vname in var_names]
-    stokes_in = np.reshape(stokes,(len(salts),1,1,len(vzas),len(vaas),4))
+    if not casesel == 'e6':
+        stokes_in = np.reshape(stokes,(len(salts),1,1,len(vzas),len(vaas),4))
+    else:
+        stokes_in = np.reshape(stokes,(1,1,1,61,61,4))
     with netCDF4.Dataset(outfilename,'a') as ds:
-        ds[var_names[-1]][:,idx_sza,0,:,:,:] = stokes_in
+        if not casesel == 'e6':
+            ds[var_names[-1]][:,idx_sza,0,:,:,:] = stokes_in
+        else:
+            ds[var_names[-1]][:,0,idx_sza,:,:,:] = stokes_in
         
 def tau_to_xsec(tau,thickness):
     # converts optical thicknesses in km to xsec in cm2
@@ -268,8 +279,10 @@ for idx_sza in range(len(szas)):
         altitudes = np.linspace(0,atmos_thickness,n_lev)
     elif casesel == 'e1':
         altitudes = settings['alttau'][:,0]
-    elif casesel == 'e2':
+    elif casesel in ['e2','e3','e4','e5','e6']:
         altitudes = settings['alttausca'][:,0]
+    else:
+        print(settings.keys())
     n_medium_positions = altitudes.size
     n_coordinate = 3
     
@@ -325,7 +338,7 @@ for idx_sza in range(len(szas)):
         
         medium['scatterer_kernel'] = np.zeros((n_scatterer,))
         medium['scatterer_kernel_parameter'] = np.ones((1,n_scatterer))# * settings['rayleigh_depol']
-    elif casesel == 'e2':
+    elif casesel in ['e2','e6']:
         alttausca = settings['alttausca']
         alttauabs = settings['alttauabs']
         medium['scatterer'][:,0] = 1.0
@@ -341,7 +354,41 @@ for idx_sza in range(len(szas)):
         medium['absorbing_cross_section'][-1,0,0] = medium['absorbing_cross_section'][-2,0,0]    
         medium['scatterer_kernel'] = np.zeros((n_scatterer,))
         medium['scatterer_kernel_parameter'] = np.ones((1,n_scatterer))# * settings['rayleigh_depol']
+    elif casesel in ['e3','e4','e5']:
+        # rayleigh scattter, molecular abs., aerosol
+        alttausca = settings['alttausca']
+        alttauabs = settings['alttauabs']
+        medium['scatterer'][:,:] = 1.0
+        medium['absorber'][:,:] = 1.0
+        medium['scatterer_kernel'] = np.zeros((n_scatterer,))
+        medium['scatterer_kernel'][1] = 1.0
+        medium['scatterer_kernel_parameter'] = np.ones((1,n_scatterer))
+        thicknesses = np.diff(alttausca[::2,0])
         
+        #first the rayleigh
+        for i in range(0,98,2):
+            thick_idx = i//2
+            medium['scattering_cross_section'][i,0,0] = tau_to_xsec(alttausca[i,1],thicknesses[thick_idx])
+            medium['scattering_cross_section'][i+1,0,0] = medium['scattering_cross_section'][i,0,0]
+            medium['absorbing_cross_section'][i,0,0] = tau_to_xsec(alttauabs[i,1],thicknesses[thick_idx])
+            medium['absorbing_cross_section'][i+1,0,0] = medium['absorbing_cross_section'][i,0,0]
+        medium['scattering_cross_section'][-1,0,0] = medium['scattering_cross_section'][-2,0,0]
+        medium['absorbing_cross_section'][-1,0,0] = medium['absorbing_cross_section'][-2,0,0]    
+        # then, the aerosol layer
+        if not casesel == 'e4':
+            aer_idx_start = np.argmin(np.abs(altitudes - settings['aer_lims'][0]))
+            aer_idx_end = np.argmin(np.abs(altitudes - settings['aer_lims'][1]))
+            layer_thickness = altitudes[aer_idx_end] - altitudes[aer_idx_start]
+            medium['scattering_cross_section'][aer_idx_start:aer_idx_end,0,1] = tau_to_xsec(settings['ssa'] * settings['tau_sca'],layer_thickness)
+            medium['absorbing_cross_section'][aer_idx_start:aer_idx_end,0,1] = tau_to_xsec((1-settings['ssa']) * settings['tau_sca'],layer_thickness)
+        else:
+            medium['scatterer_kernel'][2] = 2.0
+            for j in range(1,3):
+                aer_idx_start = np.argmin(np.abs(altitudes - settings['aer_lims'][j-1][0]))
+                aer_idx_end = np.argmin(np.abs(altitudes - settings['aer_lims'][j-1][1]))
+                layer_thickness = altitudes[aer_idx_end] - altitudes[aer_idx_start]
+                medium['scattering_cross_section'][aer_idx_start:aer_idx_end,0,j] = tau_to_xsec(settings['ssa'][j-1] * settings['tau_sca'][j-1],layer_thickness)
+                medium['absorbing_cross_section'][aer_idx_start:aer_idx_end,0,1] = tau_to_xsec((1-settings['ssa'][j-1]) * settings['tau_sca'][j-1],layer_thickness)
     #emitters and emissivities
     medium['emitter'] = np.zeros((n_medium_positions,n_emitter))
     medium['medium_emissivity'] = np.zeros((n_medium_positions,n_wl,4,n_emitter))
@@ -360,6 +407,8 @@ for idx_sza in range(len(szas)):
     instrument = {}
     
     n_los = len(salts) * len(vzas) * len(vaas)
+    if casesel == 'e6':
+        n_los = 61 * 61
     instrument['position'] = np.zeros((n_los,3))
     instrument['view_vector'] = np.zeros((n_los,3))
     
@@ -394,6 +443,16 @@ for idx_sza in range(len(szas)):
                     vza_list.append(vza)
                     vaa_list.append(vaa)
                     idx += 1
+    else:
+        # the geostationary view of Earth's disk
+        sza = szas[idx_sza]
+        saa = saas[0]
+        solar_dir = arsca.tf.solar_direction(x_ax,-y_ax,sza,saa)
+        sensor_alt = 3e5 # km
+        sat_pos = np.array([[sensor_alt + R_earth, 0.0, 0.0]])
+        view_vecs = arsca.inst.camera_fov([61,61], [2.4*np.pi/180, 2.4*np.pi/180], -x_ax, z_ax)
+        instrument['view_vector'][:,:] = view_vecs
+        instrument['position'][:,:] = np.repeat(sat_pos,n_los,axis=0)
     # BOUNDARY DEFINITIONS
     boundary = {}
     boundary['shape'] = np.array([1,1]) #both are spherical surfaces
@@ -428,7 +487,9 @@ for idx_sza in range(len(szas)):
     radiance_siro = arsca.simu.run('siro',input_fname)
     radiance_siro_sum = np.sum(radiance_siro,axis=2)
     siro_time = time.time() - siro_start
-
-    stokes = radiance_siro_sum.reshape((len(salts),1,len(vzas),len(vaas),4))
+    if not casesel == 'e6':
+        stokes = radiance_siro_sum.reshape((len(salts),1,len(vzas),len(vaas),4))
+    else:
+        stokes = radiance_siro_sum.reshape((1,1,61,61,4))
     save_results_to_nc(casesel, idx_sza, stokes)
     
