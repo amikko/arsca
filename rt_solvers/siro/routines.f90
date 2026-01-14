@@ -1163,7 +1163,7 @@ module routines
       ! off the surface.
       use atmosphere
       use global_variables, only : sunx,suny,sunz,inat,brdf_reflection
-      use polarisation, only : maxvecmulti,forwardrota
+      use polarisation, only : maxvecmulti,forwardrota,phasematrix
 
       implicit none
 
@@ -1321,10 +1321,13 @@ module routines
            call brdf_get_reflectivity(ref,phox,phoy,phoz,sirx,siry,sirz,diroldx, &
               diroldy,diroldz,brf_zen_in,brf_zen_out,brf_azi_out,brf_M,phasem,brf_wavelengths)
            singtn = cosi/pi*ref
-           !write (*,*) singtn
          else
            singtn = cosi/pi*albedo
+           if (usepolar) then
+             call phasematrix(10,cosi,phasem)
+           end if
          end if
+
          singtn = singtn*exp(-absolut)*weight
 
          !write(*,*) 'singtn: ', singtn
