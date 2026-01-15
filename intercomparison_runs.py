@@ -19,7 +19,7 @@ try:
     noph_siro = int(sys.argv[2])
 except:
     print("RUNNING DEFAULT SETTINGS")
-    casesel = 'e4'
+    casesel = 'e3'
     noph_siro = 100
 
 vzas = [0, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 90]
@@ -148,7 +148,7 @@ elif casesel == 'e4':
                 'alttausca' : homogenous_layers(alttausca),
                 'alttauabs' : homogenous_layers(alttauabs),
                 'ssa' : [0.83447903, 0.99999994],
-                'tau_sca' : [0.5, 0.00],
+                'tau_sca' : [0.5, 0.05],
                 'aer_lims' : [[0.0, 3.0],[20.0, 21.0]],
                 'wavelength' : 450,
                 'albedo' : 0.0}
@@ -230,7 +230,12 @@ def aerosol_phase_matrix_file_generation():
                 './rt_solvers/siro/input/miefiles/desdust_450nm.dat',
                 './rt_solvers/siro/input/miefiles/sulfate_450nm.dat',
                 './rt_solvers/siro/input/miefiles/cirrus_450nm.dat']
-    
+    mults = [1.0,
+             1.0,
+             1.0,
+             1.0,
+             1.0,
+             0.5]
     for i in range(len(infiles)):
         infile = infiles[i]
         if '.cdf' in infile:
@@ -241,7 +246,7 @@ def aerosol_phase_matrix_file_generation():
                     angs = ds['theta'][wl_idx,reff_idx,0,:]
                     arr = np.zeros((angs.size,7))
                     arr[:,0] = angs
-                    arr[:,1:] = ds['phase'][wl_idx,0,:,:].T
+                    arr[:,1:] = mults[i] * ds['phase'][wl_idx,0,:,:].T
             except:
                 # the ic.ghm.baum.cdf file is not included to the git repo, because
                 # it is so large. The generated cirrus_450nm is included however.
@@ -438,6 +443,8 @@ for idx_sza in range(len(szas)):
                     view_vec_zen = arsca.tf.arb_rotation(view_vec_0,zen_ang_dir * vza * np.pi/180,z_ax)
                     view_vec_zenazi = arsca.tf.arb_rotation(view_vec_zen,-1 * vaa * np.pi/180,x_ax)
                     #print(vza,vaa,sensor_alt,view_vec_zenazi) #ok!
+                    if idx_vza == 8 and idx_sza == 1 and idx_vaa == 18:
+                        print(sat_pos,view_vec_zenazi,solar_dir)
                     instrument['position'][idx,:] = sat_pos
                     instrument['view_vector'][idx,:] = view_vec_zenazi
                     vza_list.append(vza)
@@ -485,7 +492,7 @@ for idx_sza in range(len(szas)):
     
     siro_start = time.time()
     radiance_siro = arsca.simu.run('siro',input_fname)
-    radiance_siro_sum = np.sum(radiance_siro,axis=2)
+    radiance_siro_sum = np.sum(radiance_siro[:,:,:],axis=2)
     siro_time = time.time() - siro_start
     if not casesel == 'e6':
         stokes = radiance_siro_sum.reshape((len(salts),1,len(vzas),len(vaas),4))
