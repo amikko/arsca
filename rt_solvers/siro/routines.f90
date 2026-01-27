@@ -87,12 +87,12 @@ module routines
       end do
       deltaphasef1(1) = phasetable1(2,aer_idx)-phasetable1(1,aer_idx)
       !deltaphasef2(1) = phasetable2(2)-phasetable2(1)
-      deltamy(1) = cosmie(2)-cosmie(1)
+      deltamy(1) = cosmie(2,aer_idx)-cosmie(1,aer_idx)
       write(*,*) mielength(aer_idx), aer_idx
       cumtable1(1,aer_idx) = 0.5_sp*(phasetable1(1,aer_idx)+phasetable1(2,aer_idx))*deltamy(1)
       !cumtable2(1) = 0.5_sp*(phasetable2(1)+phasetable2(2))*deltamy(1)
 
-      sinmie = sin(0.5_sp*(acos(cosmie(2)) + acos(cosmie(1))))
+      sinmie = sin(0.5_sp*(acos(cosmie(2,aer_idx)) + acos(cosmie(1,aer_idx))))
       P11_integral = 0.5_sp*sinmie*(mie_table(1,aer_idx,1) + mie_table(2,aer_idx,1))*deltamy(1)
       P12_integral = 0.5_sp*sinmie*(mie_table(1,aer_idx,2) + mie_table(2,aer_idx,2))*deltamy(1)
       P21_integral = 0.5_sp*sinmie*(mie_table(1,aer_idx,5) + mie_table(2,aer_idx,5))*deltamy(1)
@@ -101,8 +101,8 @@ module routines
       do i=2,mielength(aer_idx)-1
          deltaphasef1(i) = phasetable1(i+1,aer_idx)-phasetable1(i,aer_idx)
          !deltaphasef2(i) = phasetable2(i+1)-phasetable2(i)
-         deltamy(i) = cosmie(i+1)-cosmie(i)
-         sinmie = sin(0.5_sp*(acos(cosmie(i+1)) + acos(cosmie(i))))
+         deltamy(i) = cosmie(i+1,aer_idx)-cosmie(i,aer_idx)
+         sinmie = sin(0.5_sp*(acos(cosmie(i+1,aer_idx)) + acos(cosmie(i,aer_idx))))
          !write (*,*) sinmie
          P11_integral = P11_integral + 0.5_sp*sinmie*(mie_table(i,aer_idx,1)+mie_table(i+1,aer_idx,1))*deltamy(i)
          P12_integral = P12_integral + 0.5_sp*sinmie*(mie_table(i,aer_idx,2)+mie_table(i+1,aer_idx,2))*deltamy(i)
@@ -135,7 +135,7 @@ module routines
       open(unit=15,file=filename,status='old',form='formatted')
 
       do i=1,mielength(k)
-        read(15,*) cosmie(i),mie_table(i,k,1),mie_table(i,k,2),mie_table(i,k,3), &
+        read(15,*) cosmie(i,k),mie_table(i,k,1),mie_table(i,k,2),mie_table(i,k,3), &
         mie_table(i,k,4),mie_table(i,k,5),mie_table(i,k,6),mie_table(i,k,7), &
         mie_table(i,k,8),mie_table(i,k,9),mie_table(i,k,10),mie_table(i,k,11), &
         mie_table(i,k,12),mie_table(i,k,13),mie_table(i,k,14),mie_table(i,k,15), &
@@ -859,7 +859,7 @@ module routines
       else
          call random_number(ran1)
          ind = binarysearch(cumtable1(1:mielength(scatgas-1),scatgas-1),mielength(scatgas-1),ran1)
-         kosini = cosmie(ind)
+         kosini = cosmie(ind,scatgas-1)
 
          !The above is for scattering using the mie tables
          !The below is for Henyey-Greenstein scattering of aerosols

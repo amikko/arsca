@@ -237,7 +237,7 @@ contains
        ! the line below is just for fun
        matrix(1,1)=matrix(1,1)
     elseif (process == 10) then
-       ! Reflection from ground
+       ! Reflection from Lambertian ground
 
        matrix(1,1)=0.5_sp
        matrix(2,1)=0.5_sp
@@ -282,11 +282,11 @@ contains
     integer :: i1,i2
     real(kind=sp) :: d1,d2
 
-    i1 = binarysearch(cosmie,mielength(aero),costeta)
+    i1 = binarysearch(cosmie(:,aero),mielength(aero),costeta)
     i2 = i1+1
 
-    d1 = (cosmie(i2)-costeta)/(cosmie(i2)-cosmie(i1))
-    d2 = (costeta-cosmie(i1))/(cosmie(i2)-cosmie(i1))
+    d1 = (cosmie(i2,aero)-costeta)/(cosmie(i2,aero)-cosmie(i1,aero))
+    d2 = (costeta-cosmie(i1,aero))/(cosmie(i2,aero)-cosmie(i1,aero))
 
     if (aero == 1) then
        p1 = mie1p1(i1)*d1+mie1p1(i2)*d2
@@ -317,10 +317,10 @@ contains
     integer :: i1,i2,aer_idx
     real(kind=sp) :: d1,d2
 
-    i1 = binarysearch(cosmie,mielength(aer_idx),costeta)
+    i1 = binarysearch(cosmie(:,aer_idx),mielength(aer_idx),costeta)
     i2 = i1+1
-    d1 = (cosmie(i2)-costeta)/(cosmie(i2)-cosmie(i1))
-    d2 = (costeta-cosmie(i1))/(cosmie(i2)-cosmie(i1))
+    d1 = (cosmie(i2,aer_idx)-costeta)/(cosmie(i2,aer_idx)-cosmie(i1,aer_idx))
+    d2 = (costeta-cosmie(i1,aer_idx))/(cosmie(i2,aer_idx)-cosmie(i1,aer_idx))
     p1 = mie_table(i1,aer_idx,1) * d1 + mie_table(i2,aer_idx,1) * d2
     p2 = mie_table(i1,aer_idx,2) * d1 + mie_table(i2,aer_idx,2) * d2
     p3 = mie_table(i1,aer_idx,3) * d1 + mie_table(i2,aer_idx,3) * d2
@@ -462,8 +462,12 @@ contains
 
 
     if (cond1.or.cond2) then
-
+      if (cond2) then
+        write (*,*) phasem
+        write (*,*) cummatrix
+      end if
        call Maxmulti(cummatrix,phasem,matrix)
+
     else
        if (abs(abs(oz)-1.0_sp) < epsilon) then
           ! o parallel to +-z-axis (beta=+-pi/2, rot matrix symm to shift of pi)
@@ -527,6 +531,9 @@ contains
           cummatrix(i,j)=matrix(i,j)*pweight
        end do
     end do
+    if (cond2) then
+      write (*,*) 'ÄÄ', process, pweight
+    end if
     !if (cummatrix(1,1) > 100) then
       ! write (*,*) 'abnormally high cummatrix detected'
       ! write (*,*) 'process'

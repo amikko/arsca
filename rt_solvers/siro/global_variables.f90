@@ -23,9 +23,10 @@ module global_variables
 
   ! added for polarization
   real(kind=sp), dimension(4), save :: inat
-  real(kind=sp), dimension(maxtable), save :: cosmie, mie1p1,mie1p2,mie1p3,mie1p4,mie2p1,mie2p2,mie2p3,mie2p4
+  real(kind=sp), dimension(maxtable), save :: mie1p1,mie1p2,mie1p3,mie1p4,mie2p1,mie2p2,mie2p3,mie2p4
   real(kind=sp), dimension(maxtable,11), save :: cumtable1, cumtable2, phasetable1, phasetable2
   real(kind=sp), dimension(maxtable), save :: deltaphasef1, deltaphasef2, deltamy
+  real(kind=sp), dimension(maxtable,2), save :: cosmie
   real(kind=sp), dimension(maxtable,2,16), save :: mie_table
   !                                 ^-- this value originally stood
   !                                     for each of the wavelengths

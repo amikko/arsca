@@ -322,7 +322,6 @@ program siro
             brf_zen_in,brf_zen_out,brf_azi_out,brf_M,brf_wavelengths)
           unscaw(n,m) = temp_detw(1)
           if (usepolar) unscavec(:,n,m) = temp_detvec(:,1)
-
           temp_detw = 0.0_sp
           temp_detvec = 0.0_sp
 
