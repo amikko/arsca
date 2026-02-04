@@ -19,7 +19,7 @@ try:
     noph_siro = int(sys.argv[2])
 except:
     print("RUNNING DEFAULT SETTINGS")
-    casesel = 'e3'
+    casesel = 'e1'
     noph_siro = 100
 
 vzas = [0, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 90]
@@ -37,6 +37,26 @@ siro_custom_settings = {
     'ratm' : R_earth + atmos_thickness,
     'step' : step_siro}
 
+#def rotate_IQUV(vaa_angs,stokes):
+#    for idx_vang,vang in enumerate(vaa_angs):
+def rotate_IQUV(vza_angs,stokes):
+    for idx_vang,vang in enumerate(vza_angs):
+        ang = np.pi / 180.0 * (vang)
+        ang = np.pi / 180.0 * 0
+        rotmat = np.array([[1.0, 0.0,             0.0,             0.0],
+                           [0.0, np.cos(2 * ang), np.sin(2 * ang), 0.0],
+                           [0.0, np.sin(2 * ang), np.cos(2 * ang), 0.0],
+                           [0.0, 0.0,             0.0,             1.0]])
+        stoks = stokes[...,idx_vang,:,:]
+        for i in range(stoks.shape[0]):
+            for j in range(stoks.shape[1]):
+                #print(stoks.shape)
+                stokvek = stoks[i,j,:]
+                stokvek[1] = stokvek[1]#*(-1)
+                stokvek[2] = stokvek[2]#*(-1)
+                stoks[i,j,:] = rotmat @ stokvek
+        stokes[...,idx_vang,:,:] = stoks[...]
+    return stokes
 
 def homogenous_layers(alttau):
     # nasty little layerses...
@@ -198,7 +218,20 @@ def save_results_to_nc(casesel,idx_sza,stokes):
             ds[var_names[-1]][:,idx_sza,0,:,:,:] = stokes_in
         else:
             ds[var_names[-1]][:,0,idx_sza,:,:,:] = stokes_in
-        
+
+def transform_case_results(casesel,idx_sza):
+    var_names = ['%s_sza','%s_saa','%s_vza','%s_vaa','%s_zout','radiance_%s']
+    var_names = [vname % casesel for vname in var_names]
+    with netCDF4.Dataset(outfilename,'a') as ds:
+        vaa_angs = ds[var_names[-3]]
+        if not casesel == 'e6':
+            stokes = ds[var_names[-1]][:,idx_sza,0,:,:,:]
+            stokes = rotate_IQUV(vaa_angs, stokes)
+            ds[var_names[-1]][:,idx_sza,0,:,:,:] = stokes
+        else:
+            stokes = ds[var_names[-1]][:,0,idx_sza,:,:,:]
+            stokes = rotate_IQUV(vaa_angs, stokes)
+            ds[var_names[-1]][:,0,idx_sza,:,:,:] = stokes
 def tau_to_xsec(tau,thickness):
     # converts optical thicknesses in km to xsec in cm2
     # assuming the number density to be 1/cm3
@@ -266,7 +299,12 @@ def aerosol_phase_matrix_file_generation():
             
 aerosol_phase_matrix_file_generation()
 
+#for idx_sza in range(len(szas)):
+#    transform_case_results(casesel, idx_sza)
+#halt
+
 for idx_sza in range(len(szas)):
+    #for idx_sza in [1]:
     #for idx_sza in [0]:    
     compute_siro = True
     
@@ -429,7 +467,7 @@ for idx_sza in range(len(szas)):
         saa = saas[0]
         # note: the minus sign in the y_ax on the following line redefines the polarization directions
         # to match MYSTIC.
-        solar_dir = arsca.tf.solar_direction(x_ax,-y_ax,sza,saa)
+        solar_dir = arsca.tf.solar_direction(x_ax,-z_ax,sza,saa)
         for idx_salt, sensor_alt in enumerate(salts):
             sat_pos = np.array([sensor_alt + R_earth, 0.0, 0.0])
             if sensor_alt > 60: # the top of atmosphere case
@@ -440,7 +478,7 @@ for idx_sza in range(len(szas)):
                 zen_ang_dir = 1.0
             for idx_vza, vza in enumerate(vzas):
                 for idx_vaa, vaa in enumerate(vaas):
-                    view_vec_zen = arsca.tf.arb_rotation(view_vec_0,zen_ang_dir * vza * np.pi/180,z_ax)
+                    view_vec_zen = arsca.tf.arb_rotation(view_vec_0,zen_ang_dir * vza * np.pi/180,y_ax)
                     view_vec_zenazi = arsca.tf.arb_rotation(view_vec_zen,-1 * vaa * np.pi/180,x_ax)
                     #print(vza,vaa,sensor_alt,view_vec_zenazi) #ok!
                     if idx_vza == 8 and idx_sza == 1 and idx_vaa == 18:
@@ -498,5 +536,8 @@ for idx_sza in range(len(szas)):
         stokes = radiance_siro_sum.reshape((len(salts),1,len(vzas),len(vaas),4))
     else:
         stokes = radiance_siro_sum.reshape((1,1,61,61,4))
+    #print(stokes.shape)
+    #stokes = rotate_IQUV(vaas, stokes[:,0,:,:,:])
+    stokes = rotate_IQUV(vzas, stokes[:,0,:,:,:])
     save_results_to_nc(casesel, idx_sza, stokes)
     
