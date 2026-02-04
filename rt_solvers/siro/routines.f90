@@ -1208,7 +1208,7 @@ module routines
          ord = noscat
       end if
 
-      half = .true.
+      half = .false.
 
       pslayer = 0
 
@@ -1228,19 +1228,20 @@ module routines
       !write (*,*) 'u: ', u
       ! This is probably about figuring out if a surface point is visible due to
       ! refraction in a case where it would be shadowed otherwise
-      if ((1.0_sp-u**2.0_sp) < epsilon1) then
-         limit = sin(refangle)
-      else
-         limit = sqrt(1.0_sp-u**2.0_sp)*cos(refangle) + u*sin(refangle)
-      end if
-
+      !if ((1.0_sp-u**2.0_sp) < epsilon1) then
+      !   limit = sin(refangle)
+      !else
+      !   limit = sqrt(1.0_sp-u**2.0_sp)*cos(refangle) + u*sin(refangle)
+      !end if
+      !write(*,*) 'ÖÖ', limit
       ptulo = -1.0_sp*(rinx*sunx+riny*suny+rinz*sunz)
 
       sirx = sunx
       siry = suny
       sirz = sunz
 
-      if (ptulo > limit) then
+      !if (ptulo > limit) then
+      if (ptulo > 0.0_sp) then
 
          groundhit = .true. ! point definitely in shadow
 
@@ -1251,9 +1252,12 @@ module routines
             y(1) = y1 + 0.5_sp*step*suny
             z(1) = z1 + 0.5_sp*step*sunz
          else
-            x(1) = x1 + step*sunx
-            y(1) = y1 + step*suny
-            z(1) = z1 + step*sunz
+            !x(1) = x1 + step*sunx
+            !y(1) = y1 + step*suny
+            !z(1) = z1 + step*sunz
+            x(1) = x1
+            y(1) = y1
+            z(1) = z1
          end if
 
          r = sqrt(x(1)**2+y(1)**2+z(1)**2)
@@ -1594,8 +1598,11 @@ module routines
       real(kind=sp) :: phonx, phony, phonz, fwd_x, fwd_y, fwd_z, flat_x, flat_y, flat_z
       real(kind=sp) :: rnorm, dotp, zen_in, cpx, cpy, cpz, dotp2, azi_out, zen_out, temp
       real(kind=sp) :: dirnx, dirny, dirnz, diroldnx, diroldny, diroldnz, wl_dist, wl_scal
+      real(kind=sp) :: ref_epsilon
       integer :: zen_out_idx, azi_out_idx, zen_in_idx, i, j, another_brf_wl_idx
       logical :: flat_extrap
+
+      ref_epsilon = 1.0e-6_sp
 
       rnorm = sqrt(phox*phox+phoy*phoy+phoz*phoz)
       phonx = phox / rnorm
@@ -1686,7 +1693,7 @@ module routines
             phasem(i,j) = (1 - wl_scal) * brf_M(zen_in_idx, brf_wl_idx, zen_out_idx, azi_out_idx, i, j) &
             + wl_scal * brf_M(zen_in_idx, brf_wl_idx, zen_out_idx, azi_out_idx, i, j)
           end if
-          if (ref > epsilon1) then
+          if (ref > ref_epsilon) then
             phasem(i,j) = phasem(i,j) / ref
           end if
         end do
@@ -1756,12 +1763,12 @@ module routines
       real(kind=sp), intent(out) :: res1, res2, res3
 
       !locals
-      real(kind=sp) :: dotp, rnorm
+      real(kind=sp) :: dotp, rnorm, epsilon_flat
       dotp = normx * v1 + normy * v2 + normz * v3
-
+      epsilon_flat = 1.0e-6_sp
       ! if 1 + dotp ~= 0, then the vectors are parallel/antiparallel. In that case, the fwd
       ! computation yields a zero vector. We'll fix it with the following check:
-      if (abs(1 - abs(dotp)) < epsilon1) then
+      if (abs(1 - abs(dotp)) < epsilon_flat) then
         res1 = 0.0_sp
         res2 = 0.0_sp
         res3 = 1.0_sp

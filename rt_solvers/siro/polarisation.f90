@@ -495,8 +495,9 @@ contains
        end if
 
        call rotmatrix(cosalpha,sinalpha,rot1)
+       !write (*,*) 'ÖÖ', rot1
        call rotmatrix(cosbeta,sinbeta,rot2)
-
+       !write (*,*) 'ÅÅ', rot2
        call maxmulti(phasem,rot2,matrix) ! M = PR_2
 
        call maxmulti(rot1,matrix,matrix1) ! M1 = R_1PR_2
@@ -532,7 +533,8 @@ contains
        end do
     end do
     if (cond2) then
-      write (*,*) 'ÄÄ', process, pweight
+      write (*,*) 'ÄÄ', process, pweight, matrix
+      write (*,*) phasem
     end if
     !if (cummatrix(1,1) > 100) then
       ! write (*,*) 'abnormally high cummatrix detected'
