@@ -530,7 +530,7 @@ for idx_sza in range(len(szas)):
     
     siro_start = time.time()
     radiance_siro = arsca.simu.run('siro',input_fname)
-    radiance_siro_sum = np.sum(radiance_siro[:,:,:],axis=2)
+    radiance_siro_sum = np.sum(radiance_siro[:,:,1:],axis=2)
     siro_time = time.time() - siro_start
     if not casesel == 'e6':
         stokes = radiance_siro_sum.reshape((len(salts),1,len(vzas),len(vaas),4))
