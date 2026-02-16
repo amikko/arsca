@@ -52,8 +52,8 @@ def rotate_IQUV(vza_angs,stokes):
             for j in range(stoks.shape[1]):
                 #print(stoks.shape)
                 stokvek = stoks[i,j,:]
-                stokvek[1] = stokvek[1]#*(-1)
-                stokvek[2] = stokvek[2]#*(-1)
+                stokvek[1] = stokvek[1]*(-1)
+                stokvek[2] = stokvek[2]*(-1)
                 stoks[i,j,:] = rotmat @ stokvek
         stokes[...,idx_vang,:,:] = stoks[...]
     return stokes
@@ -458,7 +458,7 @@ for idx_sza in range(len(szas)):
     z_ax = np.array([0.0, 0.0, 1.0])
     y_ax = np.array([0.0, 1.0, 0.0])
     x_ax = np.array([1.0, 0.0, 0.0])
-    nadir = np.array([-1.0,0.0,0.0])
+    nadir = np.array([0.0,0.0,-1.0])
     idx = 0
     vza_list = []
     vaa_list = []
@@ -467,9 +467,9 @@ for idx_sza in range(len(szas)):
         saa = saas[0]
         # note: the minus sign in the y_ax on the following line redefines the polarization directions
         # to match MYSTIC.
-        solar_dir = arsca.tf.solar_direction(x_ax,-z_ax,sza,saa)
+        solar_dir = arsca.tf.solar_direction(z_ax,x_ax,sza,saa)
         for idx_salt, sensor_alt in enumerate(salts):
-            sat_pos = np.array([sensor_alt + R_earth, 0.0, 0.0])
+            sat_pos = np.array([0.0, 0.0, sensor_alt + R_earth])
             if sensor_alt > 60: # the top of atmosphere case
                 view_vec_0 = nadir
                 zen_ang_dir = -1.0
@@ -479,7 +479,7 @@ for idx_sza in range(len(szas)):
             for idx_vza, vza in enumerate(vzas):
                 for idx_vaa, vaa in enumerate(vaas):
                     view_vec_zen = arsca.tf.arb_rotation(view_vec_0,zen_ang_dir * vza * np.pi/180,y_ax)
-                    view_vec_zenazi = arsca.tf.arb_rotation(view_vec_zen,-1 * vaa * np.pi/180,x_ax)
+                    view_vec_zenazi = arsca.tf.arb_rotation(view_vec_zen,-1 * vaa * np.pi/180,z_ax)
                     #print(vza,vaa,sensor_alt,view_vec_zenazi) #ok!
                     if idx_vza == 8 and idx_sza == 1 and idx_vaa == 18:
                         print(sat_pos,view_vec_zenazi,solar_dir)

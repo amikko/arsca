@@ -387,7 +387,11 @@ module routines
         dz(j+1) = dz(j)
 
         j = j + 1
-
+        if (j >= maxtable) then
+          exit ! the loop, that is. This basically happes when the atmosphere
+          ! can a straight line segment of step*maxtable within itself. Rare
+          ! in planetary atmospheres, but in flat simulation doable
+        end if
         r = sqrt(x(j)*x(j)+y(j)*y(j)+z(j)*z(j))
         !write(*,*) x(j),y(j),z(j), r
         if ((r > ratm) .or. (req > r)) then
@@ -1034,7 +1038,11 @@ module routines
             dz(j+1) = dz(j)
 
             j = j + 1
-
+            if (j >= maxtable) then
+              exit ! the loop, that is. This basically happes when the atmosphere
+              ! can a straight line segment of step*maxtable within itself. Rare
+              ! in planetary atmospheres, but in flat simulation doable
+            end if
             r = sqrt(x(j)*x(j)+y(j)*y(j)+z(j)*z(j))
 
          end do
