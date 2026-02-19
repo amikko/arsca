@@ -437,8 +437,8 @@ program siro
                        ! NOTE by Antti on 21.4.2022: We'll just have a nonpolarizing surface now so we don't have to update the
                        ! cumulative polarization matrix.
                        ! NOTE by A. on 4.12.2025: polaris now enabled for polarized calculations
-                       call polaris(dirx,diry,dirz,diroldx,diroldy,diroldz,costeta,cosalpha,sinalpha,9,&
-                       cummatrix,phasem_brdf,ref)
+                       !call polaris(dirx,diry,dirz,diroldx,diroldy,diroldz,costeta,cosalpha,sinalpha,9,&
+                       !cummatrix,phasem_brdf,ref)
                     end if
                  end if
 

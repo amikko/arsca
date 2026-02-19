@@ -462,10 +462,6 @@ contains
 
 
     if (cond1.or.cond2) then
-      if (cond2) then
-        write (*,*) phasem
-        write (*,*) cummatrix
-      end if
        call Maxmulti(cummatrix,phasem,matrix)
 
     else
@@ -520,7 +516,7 @@ contains
     else if ( process == 9 ) then
       ! brdf reflection
       if (ref > epsilon) then
-        pweight = 1.0_sp / ref
+        pweight = 1.0_sp! / ref
       end if
     else
       ! process == 10, i.e. Lambertian surface reflection
@@ -532,10 +528,10 @@ contains
           cummatrix(i,j)=matrix(i,j)*pweight
        end do
     end do
-    if (cond2) then
-      write (*,*) 'ÄÄ', process, pweight, matrix
-      write (*,*) phasem
-    end if
+    !if (cond2) then
+    !  write (*,*) 'ÄÄ', process, pweight, matrix
+    !  write (*,*) phasem
+    !end if
     !if (cummatrix(1,1) > 100) then
       ! write (*,*) 'abnormally high cummatrix detected'
       ! write (*,*) 'process'

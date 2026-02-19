@@ -1681,7 +1681,6 @@ module routines
         flat_extrap = .false.
         wl_dist = abs(current_wl - brf_wavelengths(brf_wl_idx))
         wl_scal = wl_dist / abs(brf_wavelengths(brf_wl_idx) - brf_wavelengths(another_brf_wl_idx))
-        !write (*,*) wl_scal
       end if
 
       if (flat_extrap) then
@@ -1706,17 +1705,13 @@ module routines
           end if
         end do
       end do
-      ! NOTE: We assume the surface to be non-polarizing!
-      ! That means that in this case we'll just compute:
-      !temp = 0.5_sp * (phasem(1,1) + phasem(2,2))
-      !phasem(1,1) = 0.5_sp * temp
-      !phasem(1,2) = 0.5_sp * temp
-      !phasem(2,1) = 0.5_sp * temp
-      !phasem(2,2) = 0.5_sp * temp
-      ! now fully polarized surface!!
-
-      !write (*,*) phasem
-      !stop
+      !if ((phasem(1,1)+phasem(2,2)) > 10.0_sp) then
+      !  write (*,*) phasem(1,1),phasem(2,2), ref
+      !  write (*,*) zen_in_idx, brf_wl_idx, zen_out_idx, azi_out_idx
+      !  write (*,*) dotp
+      !  write (*,*) fwd_x , fwd_y, fwd_z , flat_x , flat_y, flat_z
+      !  stop
+      !end if
 
     end subroutine brdf_get_reflectivity
 
