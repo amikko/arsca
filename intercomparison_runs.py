@@ -25,10 +25,11 @@ except:
 vzas = [0, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 90]
 vaas = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
 szas = [30, 60, 80, 87, 90, 93, 96, 99]
-#szas = [30]
+szas = [30, 60]
 saas = [0]
 solar_lon_e6 = [50,90,110,130]
 salts= [0 + 1e-4, 120 - 1e-4] # sensor altitude, kilometres
+#salts=[0 + 1e-4]
 atmos_thickness = 120
 R_earth = 6371
 
@@ -295,6 +296,19 @@ def aerosol_phase_matrix_file_generation():
                 if schemes[i][j] != 0:
                     muller_data[r,j+1] = arr[r,schemes[i][j]] if schemes[i][j] > 0 else -arr[r,-schemes[i][j]]
             muller_data[r,1:] = (IQUV2IIUV @ muller_data[r,1:].reshape((4,4)) @ IQUV2IIUV).ravel()
+        if 'desdust' in outfiles[i]:
+            n_angle_pad = 10
+            new_muller = np.zeros((rows + n_angle_pad,17))
+            new_angs = np.linspace(muller_data[-2,0],muller_data[-1,0],n_angle_pad+1)
+            new_muller[:rows,:] = muller_data[:,:]
+            new_muller[-1,:] = muller_data[-1,:]
+            new_muller[(rows-1):,0] = new_angs
+            dist = muller_data[-1,0] - muller_data[-2,0]
+            for r in range(n_angle_pad+1):
+                for j in range(16):
+                    new_muller[rows + r-1,j+1] = (new_muller[rows + r-1,0] - muller_data[-2,0]) / dist * new_muller[-1,j+1] + (muller_data[-1,0] - new_muller[rows + r-1,0]) / dist * new_muller[rows-2,j+1]
+            new_muller = np.delete(new_muller,rows-1,axis=0)
+            muller_data = new_muller
         np.savetxt(outfiles[i],muller_data)
             
 aerosol_phase_matrix_file_generation()
