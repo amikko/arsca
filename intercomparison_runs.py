@@ -25,7 +25,7 @@ except:
 vzas = [0, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 90]
 vaas = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
 szas = [30, 60, 80, 87, 90, 93, 96, 99]
-szas = [30, 60]
+#szas = [30, 60]
 saas = [0]
 solar_lon_e6 = [50,90,110,130]
 salts= [0 + 1e-4, 120 - 1e-4] # sensor altitude, kilometres
@@ -40,7 +40,7 @@ siro_custom_settings = {
 
 #def rotate_IQUV(vaa_angs,stokes):
 #    for idx_vang,vang in enumerate(vaa_angs):
-def rotate_IQUV(vza_angs,stokes):
+def old_rotate_IQUV(vza_angs,stokes):
     for idx_vang,vang in enumerate(vza_angs):
         ang = np.pi / 180.0 * (vang)
         ang = np.pi / 180.0 * 0
@@ -57,6 +57,11 @@ def rotate_IQUV(vza_angs,stokes):
                 stokvek[2] = stokvek[2]*(-1)
                 stoks[i,j,:] = rotmat @ stokvek
         stokes[...,idx_vang,:,:] = stoks[...]
+    return stokes
+
+def rotate_IQUV(vza_angs,stokes):
+    stokes[...,1] = -stokes[...,1]
+    stokes[...,2] = -stokes[...,2]
     return stokes
 
 def homogenous_layers(alttau):
@@ -506,10 +511,10 @@ for idx_sza in range(len(szas)):
         # the geostationary view of Earth's disk
         sza = szas[idx_sza]
         saa = saas[0]
-        solar_dir = arsca.tf.solar_direction(x_ax,-y_ax,sza,saa)
+        solar_dir = arsca.tf.solar_direction(z_ax,x_ax,sza,saa)
         sensor_alt = 3e5 # km
-        sat_pos = np.array([[sensor_alt + R_earth, 0.0, 0.0]])
-        view_vecs = arsca.inst.camera_fov([61,61], [2.4*np.pi/180, 2.4*np.pi/180], -x_ax, z_ax)
+        sat_pos = np.array([[0.0, 0.0, sensor_alt + R_earth]])
+        view_vecs = arsca.inst.camera_fov([61,61], [2.4*np.pi/180, 2.4*np.pi/180], -z_ax, y_ax)
         instrument['view_vector'][:,:] = view_vecs
         instrument['position'][:,:] = np.repeat(sat_pos,n_los,axis=0)
     # BOUNDARY DEFINITIONS
