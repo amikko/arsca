@@ -23,7 +23,7 @@ except:
     noph_siro = 100
 
 vzas = [0, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 90]
-vaas = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
+vaas = [0.001, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
 szas = [30, 60, 80, 87, 90, 93, 96, 99]
 #szas = [30, 60]
 saas = [0]
@@ -549,7 +549,7 @@ for idx_sza in range(len(szas)):
     
     siro_start = time.time()
     radiance_siro = arsca.simu.run('siro',input_fname)
-    radiance_siro_sum = np.sum(radiance_siro[:,:,1:],axis=2)
+    radiance_siro_sum = np.sum(radiance_siro[:,:,:],axis=2)
     siro_time = time.time() - siro_start
     if not casesel == 'e6':
         stokes = radiance_siro_sum.reshape((len(salts),1,len(vzas),len(vaas),4))
