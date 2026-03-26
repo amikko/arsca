@@ -190,12 +190,12 @@ program siro
   call nc_read_waves(wl,wlfactor,incident_stokes,source_angular_radius) ! read wavelenghts
   !write(*,*) 'ran nc_read_Waves'
   call create_layering(atmosalt)
-  write (*,*) atmosalt
+  !write (*,*) atmosalt
   ! create atmosphere profiles: temperature, pressure, scatterers, absorbers and their cross-sections
   call nc_create_atmosphere(atmosalt, sca_prof, abs_prof, pres_prof, temp_prof, &
                   sca_xsec, abs_xsec)
 
-  write(*,*) sca_prof, abs_prof, sca_xsec, abs_xsec
+  !write(*,*) sca_prof, abs_prof, sca_xsec, abs_xsec
 
   if (brdf_reflection) then
     call nc_get_brdf(brf_zen_in,brf_wavelengths,brf_zen_out,brf_azi_out,brf_M)
@@ -257,9 +257,8 @@ program siro
 
      ind = 1
 
+
      write(*,*) ' '
-     !write(*,'(2x,a6,1x,i2,1x,a1,1x,i2,2x,a15,f5.1,1x,a2,1x,a13,f5.1,a2)') 'Layer:', m, '/',nosiroalt,'Tangent height:', &
-      !    tanheight, 'km', 'Temperature: ', 0.0_sp,' K'
      write(*,*) ' Geometry ', m,'/',nosiroalt,': '
      write(*,*) ' sat_position (',satx,saty,satz,'),'
      write(*,*) ' view_vec (',detx,dety,detz,')'
@@ -293,6 +292,9 @@ program siro
         call tables_general (loskumtn,losnocells,losprocess,losstartweight,losx,losy,losz, &
              losdx,losdy,losdz,loslayers,wl_abs_xsec,wl_sca_xsec,wlfact,abs_prof,sca_prof, &
              transmitted_weight,ground_los, hits_atmos) ! discretisize LOS
+        !if (m == 153) then
+        !  write(*,*) losstartweight(1:losnocells)
+        !end if
         if (.not. hits_atmos) then
           write (*,*) 'not hitting atmos, skipping los'
           exit

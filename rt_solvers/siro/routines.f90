@@ -816,7 +816,16 @@ module routines
         !$OMP END CRITICAL
 
       end if   !.not.groundhit
-
+      !if (noscat == 1 .and. (dirx - sunx)**2 + (diry - suny)**2 + (dirz - sunz)**2 < 1e-3_sp) then
+      !  write (*,*) lvec(1),exp(-absolut),absolut,weight
+      !  if (lvec(1) > 10.0_sp) then
+      !    write (*,*) phasem
+      !    write (*,*) ' '
+      !    write (*,*) sirv
+      !    write (*,*) ' '
+      !    write (*,*) rota
+      !  end if
+      !end if
     end subroutine point_sun
 
 

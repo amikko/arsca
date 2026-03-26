@@ -1,6 +1,6 @@
 
  $param
-	noph            = 1000
+	noph            = 100
 	usepolar        = .true.
 	userefrac       = .false.
 	atmos_layers    = 1001
@@ -10,8 +10,8 @@
 	req             = 6.37100e+03
 	ratm            = 6491
 	step            = 1.00000e+00
-	brdf_reflection = .false.
-	BRF_FILENAME    = 'input/brdf/new_snow.nc4'
-	AER_FILENAME    = 'input/miefiles/desdust_450nm.dat'
-	AER2_FILENAME   = 'input/miefiles/sulfate_450nm.dat'
+	brdf_reflection = .true.
+	BRF_FILENAME    = 'input/brdf/mischenko_ocean_5ms.nc4'
+	AER_FILENAME    = 'input/miefiles/aer_WCO2.dat'
+	AER2_FILENAME   = 'input/miefiles/aer_WCO2.dat'
  $end
