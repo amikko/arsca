@@ -462,7 +462,8 @@ module routines
       else
         direct_los = .false.
       endif
-
+      direct_los = .false.
+      write (*,*) 'direct los disabled'
     end subroutine direct_transmissivity
 
 
