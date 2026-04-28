@@ -90,7 +90,8 @@ contains
        d1 = costheta - cosmie(ind,index-1)
        d2 = cosmie(ind+1,index-1) - costheta
        !1/4pi on oikea!!!
-       phase = 1.0_sp / (4.0_sp * pi) * (phasetable1(ind,index-1) * (d2/(d1+d2)) + &
+       !1.0_sp / (4.0_sp * pi) *
+       phase = phase_normalizer(index-1) * (phasetable1(ind,index-1) * (d2/(d1+d2)) + &
        phasetable1(ind+1,index-1) * (d1/(d1+d2)))
        ! this linear interpolation was not implemented here, but it was in
        ! phase matrix. Therefore the phase matrix was not scaled appropriately

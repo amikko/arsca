@@ -11,7 +11,7 @@ import numpy as np
 import netCDF4
 import arsca
 
-step_siro = 1.0
+step_siro = 0.5
 #noph_siro = 100
 
 try:
@@ -98,7 +98,7 @@ elif casesel == 'd2':
 
 elif casesel == 'd3':
     siro_custom_settings['AER_FILENAME'] = "'input/miefiles/ws_sphere_500nm.dat'"
-    settings = {'n_sca' : 1,
+    settings = {'n_sca' : 2,
                 'n_abs' : 1,
                 'tau_sca' : 0.2,
                 'ssa' : 0.975683,
@@ -107,7 +107,7 @@ elif casesel == 'd3':
                 'n_lay' : 1}
 elif casesel == 'd4':
     siro_custom_settings['AER_FILENAME'] = "'input/miefiles/spheroid_350nm.dat'"
-    settings = {'n_sca' : 1,
+    settings = {'n_sca' : 2,
                 'n_abs' : 1,
                 'tau_sca' : 0.2,
                 'ssa' : 0.787581,
@@ -116,7 +116,7 @@ elif casesel == 'd4':
                 'n_lay' : 1}
 elif casesel == 'd5':
     siro_custom_settings['AER_FILENAME'] = "'input/miefiles/water10mic_800nm.dat'"
-    settings = {'n_sca' : 1,
+    settings = {'n_sca' : 2,
                 'n_abs' : 1,
                 'tau_sca' : 5.0,
                 'ssa' : 0.999979,
@@ -238,6 +238,7 @@ def transform_case_results(casesel,idx_sza):
             stokes = ds[var_names[-1]][:,0,idx_sza,:,:,:]
             stokes = rotate_IQUV(vaa_angs, stokes)
             ds[var_names[-1]][:,0,idx_sza,:,:,:] = stokes
+
 def tau_to_xsec(tau,thickness):
     # converts optical thicknesses in km to xsec in cm2
     # assuming the number density to be 1/cm3
@@ -257,9 +258,9 @@ schemes = [[1,2,0,0,2,1,0,0,0,0,3,4,0,0,-4,3],
            [1,2,0,0,2,5,0,0,0,0,3,4,0,0,-4,6]]
 
 def aerosol_phase_matrix_file_generation():
-    infiles = ['./datafiles/mie_results/waso.mie.dat',
-               './datafiles/mie_results/sizedistr_spheroid.dat',
-               './datafiles/mie_results/watercloud.mie.dat',
+    infiles = ['./datafiles/mie_results/waso.mie.dat', # ssa: 0.975683
+               './datafiles/mie_results/sizedistr_spheroid.dat', # ssa: 0.787581
+               './datafiles/mie_results/watercloud.mie.dat', # ssa: 0.999979
                './datafiles/mie_results/desert.cdf', # ssa: 0.83447903
                './datafiles/mie_results/sulfate.cdf', # ssa: 0.99999994
                './datafiles/mie_results/ic.ghm.baum.cdf'] # ssa: 1.000000
@@ -269,12 +270,12 @@ def aerosol_phase_matrix_file_generation():
                 './rt_solvers/siro/input/miefiles/desdust_450nm.dat',
                 './rt_solvers/siro/input/miefiles/sulfate_450nm.dat',
                 './rt_solvers/siro/input/miefiles/cirrus_450nm.dat']
-    mults = [1.0,
-             1.0,
-             1.0,
-             1.0,
-             1.0,
-             0.5]
+    mults = [1.0, # D3, mie ok
+             1.0, # D4, mie ok
+             1.0, # D5, mie ok
+             1.0, # E3, E4, mie ok
+             1.0, # E4, mie ok
+             1.0] # E5, mie ok!
     for i in range(len(infiles)):
         infile = infiles[i]
         if '.cdf' in infile:
@@ -285,7 +286,7 @@ def aerosol_phase_matrix_file_generation():
                     angs = ds['theta'][wl_idx,reff_idx,0,:]
                     arr = np.zeros((angs.size,7))
                     arr[:,0] = angs
-                    arr[:,1:] = mults[i] * ds['phase'][wl_idx,0,:,:].T
+                    arr[:,1:] = mults[i] * ds['phase'][wl_idx,reff_idx,:,:].T
             except:
                 # the ic.ghm.baum.cdf file is not included to the git repo, because
                 # it is so large. The generated cirrus_450nm is included however.
@@ -302,6 +303,9 @@ def aerosol_phase_matrix_file_generation():
                     muller_data[r,j+1] = arr[r,schemes[i][j]] if schemes[i][j] > 0 else -arr[r,-schemes[i][j]]
             muller_data[r,1:] = (IQUV2IIUV @ muller_data[r,1:].reshape((4,4)) @ IQUV2IIUV).ravel()
         if 'desdust' in outfiles[i]:
+            """
+            This segment is to fix the enormous jump in the forward scattering spike...
+            """
             n_angle_pad = 10
             new_muller = np.zeros((rows + n_angle_pad,17))
             new_angs = np.linspace(muller_data[-2,0],muller_data[-1,0],n_angle_pad+1)
@@ -322,9 +326,10 @@ aerosol_phase_matrix_file_generation()
 #    transform_case_results(casesel, idx_sza)
 #halt
 
-for idx_sza in range(len(szas)):
+#for idx_sza in range(len(szas)):
     #for idx_sza in [1]:
-    #for idx_sza in [0]:    
+    #for idx_sza in [0]:
+for idx_sza in [3]:
     compute_siro = True
     
     arsca.simu.create_siro_settings(siro_custom_settings)
@@ -382,7 +387,9 @@ for idx_sza in range(len(szas)):
         
     elif casesel in ['d3', 'd4', 'd5']:
         medium['scatterer_kernel'] = np.ones((n_scatterer,)) # this is to use the aerosols
-        medium['scatterer'][:,0] = 1.0 
+        medium['scatterer_kernel'][0] = 0 # the Rayleigh is populated, but its
+        # scattering is set to zero so Siro knows to skip it...
+        medium['scatterer'][:,1] = 1.0
         medium['scattering_cross_section'] = tau_to_xsec(settings['tau_sca'] * settings['ssa'],atmos_thickness)
         medium['scatterer_kernel_parameter'] = np.zeros((1,n_scatterer))
         medium['absorber'][:,0] = 1.0

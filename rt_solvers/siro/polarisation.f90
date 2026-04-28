@@ -148,7 +148,6 @@ contains
        ! Rayleigh scattering with anisotropy (gamma.ne.0),
        ! ks. Chandrasekhar p. 49
 
-       ! depol is currently set to zero
        gamma = depol/(2.0_sp-depol)
        coeff = 3.0_sp/(8.0_sp*pi)*(1.0_sp/(1.0_sp+2.0_sp*gamma))
 
@@ -228,7 +227,8 @@ contains
        tempmat(4,3) = p15
        tempmat(4,4) = p16
 
-       matrix = 1/(2*pi)*tempmat
+       matrix = 2.0_sp*phase_normalizer(process-1)*tempmat
+       !matrix = tempmat
 
     elseif (process == 9) then
        ! Reflection from BRDF; the phase matrix is obtained from another subroutine

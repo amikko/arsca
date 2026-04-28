@@ -103,7 +103,7 @@ module routines
          !deltaphasef2(i) = phasetable2(i+1)-phasetable2(i)
          deltamy(i) = cosmie(i+1,aer_idx)-cosmie(i,aer_idx)
          sinmie = sin(0.5_sp*(acos(cosmie(i+1,aer_idx)) + acos(cosmie(i,aer_idx))))
-         !write (*,*) sinmie
+         !write (*,*) sinmie, deltamy(i), phasetable1(i,aer_idx)
          P11_integral = P11_integral + 0.5_sp*sinmie*(mie_table(i,aer_idx,1)+mie_table(i+1,aer_idx,1))*deltamy(i)
          P12_integral = P12_integral + 0.5_sp*sinmie*(mie_table(i,aer_idx,2)+mie_table(i+1,aer_idx,2))*deltamy(i)
          P21_integral = P21_integral + 0.5_sp*sinmie*(mie_table(i,aer_idx,5)+mie_table(i+1,aer_idx,5))*deltamy(i)
@@ -114,12 +114,22 @@ module routines
       do i=1,mielength(aer_idx)-1
         cumtable1(i,aer_idx) = cumtable1(i,aer_idx) / cumtablemax
       end do
-      ! this here normalizes the polarzation matrices.
+      ! this below here is to check the phase function normalization.
+      do i=1,mielength(aer_idx)-1
 
+        sinmie = sin(0.5_sp*(acos(cosmie(i+1,aer_idx)) + acos(cosmie(i,aer_idx))))
+        phase_normalizer(aer_idx) = phase_normalizer(aer_idx) + sinmie * deltamy(i) * phasetable1(i,aer_idx)
+        !write (*,*) sinmie, deltamy(i), phasetable1(i,aer_idx), phasef(1, 0.5*(cosmie(i,aer_idx) + cosmie(i+1,aer_idx)))
+      end do
+      !phase_normalizer(aer_idx) = (3.0_sp / (4.0_sp * pi)) / phase_normalizer(aer_idx)
+      !phase_normalizer(aer_idx) = (1.0_sp / (4.0_sp)) / phase_normalizer(aer_idx)
+      phase_normalizer(aer_idx) = 1.0_sp / (4.0_sp * pi)! / phase_normalizer(aer_idx)
       !write(*,*) P11_integral
 
     end do ! aer_idx
+    write (*,*) phase_normalizer
       !end do !wl_idx
+
     end subroutine read_mie_files
 
     subroutine mie_helper(k,filename)

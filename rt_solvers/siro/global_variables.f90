@@ -27,6 +27,7 @@ module global_variables
   real(kind=sp), dimension(maxtable,11), save :: cumtable1, cumtable2, phasetable1, phasetable2
   real(kind=sp), dimension(maxtable), save :: deltaphasef1, deltaphasef2, deltamy
   real(kind=sp), dimension(maxtable,2), save :: cosmie
+  real(kind=sp), dimension(2), save :: phase_normalizer
   real(kind=sp), dimension(maxtable,2,16), save :: mie_table
   !                                 ^-- this value originally stood
   !                                     for each of the wavelengths
