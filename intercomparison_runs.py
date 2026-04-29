@@ -329,7 +329,7 @@ aerosol_phase_matrix_file_generation()
 #for idx_sza in range(len(szas)):
     #for idx_sza in [1]:
     #for idx_sza in [0]:
-for idx_sza in [3]:
+for idx_sza in [1]:
     compute_siro = True
     
     arsca.simu.create_siro_settings(siro_custom_settings)

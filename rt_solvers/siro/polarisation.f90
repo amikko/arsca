@@ -509,13 +509,17 @@ contains
 
     if (process <= nosir) then
        ph = phasef(process,costeta)
-
-       if (abs(ph-0.0_sp) > epsilon) then
+       !ph = ((matrix(1,1) + matrix(2,2)) * 0.5_sp)
+       if (ph < 0.0) then
+         write (*,*) 'less than 0 ph!?'
+         stop
+       end if
+       if (ph > 1e-6) then
           pweight = 1.0_sp/ph
        end if
-    else if ( process == 9 ) then
+    else if ( process == 9 .or. process == 10) then
       ! brdf reflection
-      if (ref > epsilon) then
+      if (ref > 1e-6) then
         pweight = 1.0_sp! / ref
       end if
     else
@@ -533,37 +537,39 @@ contains
     !  write (*,*) phasem
     !end if
     !if (cummatrix(1,1) > 100) then
-      ! write (*,*) 'abnormally high cummatrix detected'
-      ! write (*,*) 'process'
-      ! write (*,*) process
-      ! write (*,*) 'conds'
-      ! write (*,*) cond1
-      ! write (*,*) cond2
-      ! write (*,*) 'phasem'
-      ! write (*,*) phasem
-      ! write (*,*) 'old cummatrix'
-      ! write (*,*) oldcm
-      ! write (*,*) 'new cummatrix'
-      ! write (*,*) cummatrix
-      ! write (*,*) 'rot1'
-      ! write (*,*) rot1
-      ! write (*,*) 'rot2'
-      ! write (*,*) rot2
-      ! write (*,*) 'angles'
-      ! write (*,*) cosalpha
-      ! write (*,*) sinalpha
-      ! write (*,*) cosbeta
-      ! write (*,*) sinbeta
-      ! write (*,*) 'direction'
-      ! write (*,*) ox
-      ! write (*,*) oy
-      ! write (*,*) oz
-      ! write (*,*) nx
-      ! write (*,*) ny
-      ! write (*,*) nz
-      ! write (*,*) 'scaling'
-      ! write (*,*) phasef(process,costeta)
-      !stop
+    !   write (*,*) 'abnormally high cummatrix detected'
+    !   write (*,*) 'pweight'
+    !   write (*,*) pweight
+    !   write (*,*) 'process'
+       !write (*,*) process
+       !write (*,*) 'conds'
+       !write (*,*) cond1
+       !write (*,*) cond2
+    !   write (*,*) 'phasem'
+    !   write (*,*) phasem
+    !   write (*,*) 'old cummatrix'
+    !   write (*,*) oldcm
+    !   write (*,*) 'new cummatrix'
+    !   write (*,*) cummatrix
+       !write (*,*) 'rot1'
+       !write (*,*) rot1
+       !write (*,*) 'rot2'
+       !write (*,*) rot2
+    !   write (*,*) 'angles'
+    !   write (*,*) cosalpha
+    !   write (*,*) sinalpha
+    !   write (*,*) cosbeta
+    !   write (*,*) sinbeta
+    !   write (*,*) 'direction'
+    !   write (*,*) ox
+    !   write (*,*) oy
+    !   write (*,*) oz
+    !   write (*,*) nx
+    !   write (*,*) ny
+    !   write (*,*) nz
+    !   write (*,*) 'scaling'
+    !   write (*,*) phasef(process,costeta)
+    !  stop
     !end if
     !write(*,*) cummatrix
     !write(*,*) '----------------'
