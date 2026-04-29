@@ -517,14 +517,14 @@ program siro
             output_sI(ord,n,m) = (detvec(1,ord,n,m) + detvec(2,ord,n,m)) / noph
             output_sQ(ord,n,m) = (detvec(1,ord,n,m) - detvec(2,ord,n,m)) / noph
             output_sU(ord,n,m) = - detvec(3,ord,n,m) / noph
-            output_sV(ord,n,m) = detvec(4,ord,n,m) / noph
+            output_sV(ord,n,m) = - detvec(4,ord,n,m) / noph
         end do
         output_I(:,n,m) = detw(:,n,m) / noph
 
         out_unscavec(1,n,m) = unscavec(1,n,m) + unscavec(2,n,m)
         out_unscavec(2,n,m) = unscavec(1,n,m) - unscavec(2,n,m)
         out_unscavec(3,n,m) = - unscavec(3,n,m)
-        out_unscavec(4,n,m) = unscavec(4,n,m)
+        out_unscavec(4,n,m) = - unscavec(4,n,m)
 
 
      end do ! end of wavelength loop

@@ -208,24 +208,24 @@ contains
        p10,p11,p12,p13,p14,p15,p16)
 
        tempmat(1,1) = p1
-       tempmat(1,2) = p2
+       tempmat(1,2) = p2! / (p1 + p6)
        tempmat(1,3) = p3
        tempmat(1,4) = p4
 
-       tempmat(2,1) = p5
+       tempmat(2,1) = p5! / (p1 + p6)
        tempmat(2,2) = p6
        tempmat(2,3) = p7
        tempmat(2,4) = p8
 
        tempmat(3,1) = p9
        tempmat(3,2) = p10
-       tempmat(3,3) = p11
-       tempmat(3,4) = p12
+       tempmat(3,3) = p11 / (p1 + p6)
+       tempmat(3,4) = p12 / (p1 + p6)
 
        tempmat(4,1) = p13
        tempmat(4,2) = p14
-       tempmat(4,3) = p15
-       tempmat(4,4) = p16
+       tempmat(4,3) = p15 / (p1 + p6)
+       tempmat(4,4) = p16 / (p1 + p6)
 
        matrix = 2.0_sp*phase_normalizer(process-1)*tempmat
        !matrix = tempmat

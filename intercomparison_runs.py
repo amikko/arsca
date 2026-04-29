@@ -131,7 +131,7 @@ elif casesel == 'd6':
                 'n_abs' : 1,
                 'tau_sca' : 0.1,
                 'wavelength' : 477,
-                'albedo' : 0.3,
+                'albedo' : 1.0,
                 'n_lay' : 1,
                 'rayleigh_depol' : 0.03}
 elif casesel == 'e1':
@@ -202,7 +202,7 @@ elif casesel == 'e6':
                 'alttausca' : homogenous_layers(alttausca),
                 'alttauabs' : homogenous_layers(alttauabs),
                 'wavelength' : 450,
-                'albedo' : 0.3,
+                'albedo' : 1.0,
                 'n_lay' : 1,
                 'rayleigh_depol' : 0.03}
     szas = solar_lon_e6
@@ -302,7 +302,7 @@ def aerosol_phase_matrix_file_generation():
                 if schemes[i][j] != 0:
                     muller_data[r,j+1] = arr[r,schemes[i][j]] if schemes[i][j] > 0 else -arr[r,-schemes[i][j]]
             muller_data[r,1:] = (IQUV2IIUV @ muller_data[r,1:].reshape((4,4)) @ IQUV2IIUV).ravel()
-        if 'desdust' in outfiles[i]:
+        if 'desdust' in outfiles[i]:# or 'cirrus' in outfiles[i] or 'water' in outfiles[i]:
             """
             This segment is to fix the enormous jump in the forward scattering spike...
             """
