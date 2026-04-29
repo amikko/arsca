@@ -1725,6 +1725,7 @@ module routines
           end if
         end do
       end do
+      phasem = 2*phasem
       !if ((phasem(1,1)+phasem(2,2)) > 10.0_sp) then
       !  write (*,*) phasem(1,1),phasem(2,2), ref
       !  write (*,*) zen_in_idx, brf_wl_idx, zen_out_idx, azi_out_idx
