@@ -22,7 +22,7 @@ except:
     casesel = 'e1'
     noph_siro = 100
 
-vzas = [0, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 90]
+vzas = [0.1, 9, 18, 26, 34, 41, 48, 54, 60, 65, 70, 74, 78, 81, 84, 86, 88, 89, 89.9]
 vaas = [0.001, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 179.999]
 szas = [30, 60, 80, 87, 90, 93, 96, 99]
 #szas = [30, 60]
@@ -329,7 +329,7 @@ aerosol_phase_matrix_file_generation()
 #for idx_sza in range(len(szas)):
     #for idx_sza in [1]:
     #for idx_sza in [0]:
-for idx_sza in [1]:
+for idx_sza in [4]:
     compute_siro = True
     
     arsca.simu.create_siro_settings(siro_custom_settings)
