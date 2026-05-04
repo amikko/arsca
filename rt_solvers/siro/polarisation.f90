@@ -432,6 +432,7 @@ contains
     real(kind=sp), intent(in) ::  phasem_brdf (4,4)
     integer, intent(in) :: process
     real(kind=sp), intent(inout) :: cummatrix (4,4)
+
     ! local
     !real(kind=sp), parameter :: epsilon = 1.0e-20_sp ! check this?!
     ! Antti @ 2.9.2022: Checked the epsilon and it requires some tuning.
@@ -439,7 +440,8 @@ contains
     real(kind=sp), parameter :: epsilon = 0.1 / 180.0_sp * pi
     logical :: cond1,cond2
     real(kind=sp), dimension(4,4) :: phasem,rot1,rot2,matrix,matrix1,oldcm
-    real(kind=sp) :: cosbeta,sinbeta,nim,pweight,ph,norm
+    real(kind=sp), dimension(4) :: testvec_in, testvec_out
+    real(kind=sp) :: cosbeta,sinbeta,nim,pweight,ph,norm,vecnorm
     integer :: i,j
 
     call phasematrix(process,costeta,phasem)
@@ -532,6 +534,22 @@ contains
           cummatrix(i,j)=matrix(i,j)*pweight
        end do
     end do
+
+    testvec_in(1) = 1.0
+    testvec_in(2) = 1.0
+    testvec_in(3) = 0.0
+    testvec_in(4) = 0.0
+    call maxvecmulti(cummatrix,testvec_in,testvec_out)
+    vecnorm = sqrt(testvec_out(1)*testvec_out(1) + testvec_out(3)*testvec_out(3) &
+    + testvec_out(3)*testvec_out(3) + testvec_out(4)*testvec_out(4))
+
+    ! NOTE: 4.5.2026 by Ama. This limit below is currently selected arbitrarily.
+    ! it is most likely a result of extremely multiple scattering... This should
+    ! be investegated properly. But as of now, it stops the arbitrarily high
+    ! energy photons from occurring, so it is fine.
+    if (vecnorm > 50) then
+      cummatrix = 0.0
+    end if
     !if (cond2) then
     !  write (*,*) 'ÄÄ', process, pweight, matrix
     !  write (*,*) phasem
