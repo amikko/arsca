@@ -1,5 +1,5 @@
 # ARSCA: Atmospheric Radiation Simulation Computation Application
-Correspondence: antti.mikkonen@fmi.fi
+Correspondence: amanita.mikkonen@fmi.fi
 
 ## Setting up ARSCA
 
