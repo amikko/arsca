@@ -284,7 +284,7 @@ module routines
       ! overhead and this should ease the last step problem. However, this doesn't
       ! fix it exactly.
 
-      step_diminisher = 4
+      step_diminisher = 40
 
       cm_in_km = 100000.0_sp
       step_cm = step * cm_in_km
@@ -475,7 +475,6 @@ module routines
       direct_los = .false.
       write (*,*) 'direct los disabled'
     end subroutine direct_transmissivity
-
 
     !----------------------------------------------------------------------
     subroutine first_scattering_point(kumtn,nocells,process,startweight, &
